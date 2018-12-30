@@ -1,6 +1,6 @@
 extern crate proc_macro;
 
-use proc_macro::{TokenTree, TokenStream};
+use proc_macro::{TokenStream, TokenTree};
 use quote::quote;
 use syn;
 
@@ -23,8 +23,7 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
             }
         };
         return gen.into();
-    }
-    else {
+    } else {
         panic!("Expected a single name as argument");
     }
 }

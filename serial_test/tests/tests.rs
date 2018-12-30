@@ -1,4 +1,4 @@
-use serial_test::{serial_core};
+use serial_test::serial_core;
 
 #[test]
 fn test_empty_serial_call() {
