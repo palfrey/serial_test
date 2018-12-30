@@ -1,19 +1,25 @@
-use antidote::Mutex;
+use antidote::{Mutex, RwLock};
 use std::collections::HashMap; 
 use std::sync::Arc;
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 use lazy_static::lazy_static;
 
 lazy_static! {
-    static ref LOCKS: Arc<Mutex<HashMap<String, Mutex<()>>>> = Arc::new(Mutex::new(HashMap::new()));
+    static ref LOCKS: Arc<RwLock<HashMap<String, Mutex<()>>>> = Arc::new(RwLock::new(HashMap::new()));
 }
 
 pub fn serial_core(name: &str, function: fn()) {
-    let mut unlock = LOCKS.lock();
-    let local_lock = unlock.deref_mut();
-    if !local_lock.contains_key(name) {
-        local_lock.insert(name.to_string(), Mutex::new(()));
+    // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
+    let new_key = {
+        let unlock = LOCKS.read();
+        !unlock.deref().contains_key(name)
+    };
+    if new_key {
+        // This is the rare path, which avoids the multi-writer situation mostly
+        LOCKS.write().deref_mut().insert(name.to_string(), Mutex::new(()));
     }
-    let _guard = local_lock[name].lock();
+    let unlock = LOCKS.read();
+    // _guard needs to be named to avoid being instant dropped
+    let _guard = unlock.deref()[name].lock();
     function();
 }
