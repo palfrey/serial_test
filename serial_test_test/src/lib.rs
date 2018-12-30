@@ -11,7 +11,7 @@ mod tests {
     }
 
     #[test]
-    #[serial(alpha)]
+    #[serial(beta)]
     fn test_serial_1() {
         println!("Start 1");
         LOCK.store(1, Ordering::Relaxed);
