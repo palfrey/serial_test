@@ -1,0 +1,10 @@
+[package]
+name = "serial_test_test"
+description = "External testing crate for serial_test_derive"
+version = "0.1.0"
+authors = ["Tom Parker-Shemilt <palfrey@tevp.net>"]
+edition = "2018"
+
+[dependencies]
+serial_test_derive = {path="../serial_test_derive"}
+serial_test = {path="../serial_test"}
