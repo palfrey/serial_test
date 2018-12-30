@@ -12,6 +12,10 @@ mod tests {
     }
 
     #[test]
+    #[serial]
+    fn test_serial_no_arg() {}
+
+    #[test]
     #[serial(alpha)]
     fn test_serial_1() {
         println!("Start 1");
