@@ -1,3 +1,6 @@
+//! # serial_test
+//! Helper crate for [serial_test_derive](../serial_test_derive/index.html)
+
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
@@ -8,6 +11,15 @@ lazy_static! {
         Arc::new(RwLock::new(HashMap::new()));
 }
 
+/// Helper function for [serial_test_derive::serial](../serial_test_derive/attr.serial.html)
+/// ```
+/// #[test]
+/// fn test_serial_core() {
+///     serial_core("some key", || {
+///         println!("Bar");
+///     });
+/// }
+/// ```
 pub fn serial_core(name: &str, function: fn()) {
     // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
     let new_key = {
