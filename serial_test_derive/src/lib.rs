@@ -87,7 +87,10 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     let ast: syn::ItemFn = syn::parse(input).unwrap();
     let name = ast.ident;
     let block = ast.block;
+    let attrs = ast.attrs;
     let gen = quote! {
+        #(#attrs)
+        *
         fn #name () {
             serial_test::serial_core(#key, || {
                 #block
