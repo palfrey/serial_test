@@ -15,7 +15,7 @@
 //! }
 //! ````
 //! Multiple tests with the [serial](attr.serial.html) attribute are guaranteed to be executed in serial. Ordering
-//! of the tests is not guaranteed however
+//! of the tests is not guaranteed however.
 
 extern crate proc_macro;
 
