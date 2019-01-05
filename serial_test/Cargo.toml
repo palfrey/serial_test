@@ -6,6 +6,8 @@ version = "0.1.0"
 authors = ["Tom Parker-Shemilt <palfrey@tevp.net>"]
 edition = "2018"
 repository = "https://github.com/palfrey/serial_test/"
+readme = "README.md"
+categories = ["development-tools::testing"]
 
 [dependencies]
 lazy_static = "1.2"
