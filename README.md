@@ -26,8 +26,8 @@ We require at least Rust 1.30 for [attribute-like procedural macros](https://doc
 Add to your Cargo.toml
 ```
 [dev-dependencies]
-serial_test = "0.1"
-serial_test_derive = "0.1"
+serial_test = "*"
+serial_test_derive = "*"
 ```
 
 plus `use serial_test_derive::serial;` (for Rust 2018) or
