@@ -2,6 +2,7 @@
 [![Version](https://img.shields.io/crates/v/serial_test_derive.svg)](https://crates.io/crates/serial_test_derive)
 [![Docs](https://docs.rs/serial_test_derive/badge.svg)](https://docs.rs/serial_test_derive/)
 ![MIT license](https://img.shields.io/crates/l/serial_test_derive.svg)
+[![Build Status](https://travis-ci.org/palfrey/serial_test.svg?branch=master)](https://travis-ci.org/palfrey/serial_test)
 
 `serial_test_derive` allows for the creation of serialised Rust tests using the `serial` attribute
 e.g.
