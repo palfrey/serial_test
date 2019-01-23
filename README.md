@@ -33,7 +33,7 @@ serial_test_derive = "*"
 
 plus `use serial_test_derive::serial;` (for Rust 2018) or
 ```
-#![macro_use]
+#[macro_use]
 extern crate serial_test_derive;
 ```
 for earlier versions.
