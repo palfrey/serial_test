@@ -7,7 +7,7 @@
 
 `serial_test` allows for the creation of serialised Rust tests using the `serial` attribute
 e.g.
-````
+```rust
 #[test]
 #[serial]
 fn test_serial_one() {
@@ -19,20 +19,20 @@ fn test_serial_one() {
 fn test_serial_another() {
   // Do things
 }
-````
+```
 Multiple tests with the `serial` attribute are guaranteed to be executed in serial. Ordering of the tests is not guaranteed however.
 
 ## Usage
 We require at least Rust 1.32 for [attribute-like procedural macros](https://doc.rust-lang.org/reference/procedural-macros.html#attribute-macros) support and [proc-macro2](https://github.com/alexcrichton/proc-macro2) being willing to build!
 
 Add to your Cargo.toml
-```
+```toml
 [dev-dependencies]
 serial_test = "*"
 ```
 
 plus `use serial_test::serial;` (for Rust 2018) or
-```
+```rust
 #[macro_use]
 extern crate serial_test;
 ```
