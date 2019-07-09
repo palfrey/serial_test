@@ -40,3 +40,8 @@ pub fn serial_core(name: &str, function: fn()) {
     let _guard = unlock.deref()[name].lock();
     function();
 }
+
+// Re-export #[serial].
+#[allow(unused_imports)]
+#[doc(hidden)]
+pub use serial_test_derive::*;

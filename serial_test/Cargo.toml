@@ -12,3 +12,4 @@ categories = ["development-tools::testing"]
 [dependencies]
 lazy_static = "1.2"
 parking_lot = "0.9"
+serial_test_derive = { version = "~0.2.0", path = "../serial_test_derive" }

@@ -1,10 +1,10 @@
-# serial_test_derive
-[![Version](https://img.shields.io/crates/v/serial_test_derive.svg)](https://crates.io/crates/serial_test_derive)
-[![Docs](https://docs.rs/serial_test_derive/badge.svg)](https://docs.rs/serial_test_derive/)
-![MIT license](https://img.shields.io/crates/l/serial_test_derive.svg)
+# serial_test
+[![Version](https://img.shields.io/crates/v/serial_test.svg)](https://crates.io/crates/serial_test)
+[![Docs](https://docs.rs/serial_test/badge.svg)](https://docs.rs/serial_test/)
+![MIT license](https://img.shields.io/crates/l/serial_test.svg)
 [![Build Status](https://travis-ci.com/palfrey/serial_test.svg?branch=master)](https://travis-ci.com/palfrey/serial_test)
 
-`serial_test_derive` allows for the creation of serialised Rust tests using the `serial` attribute
+`serial_test` allows for the creation of serialised Rust tests using the `serial` attribute
 e.g.
 ````
 #[test]
@@ -28,13 +28,12 @@ Add to your Cargo.toml
 ```
 [dev-dependencies]
 serial_test = "*"
-serial_test_derive = "*"
 ```
 
-plus `use serial_test_derive::serial;` (for Rust 2018) or
+plus `use serial_test::serial;` (for Rust 2018) or
 ```
 #[macro_use]
-extern crate serial_test_derive;
+extern crate serial_test;
 ```
 for earlier versions.
 
