@@ -7,6 +7,5 @@ authors = ["Tom Parker-Shemilt <palfrey@tevp.net>"]
 edition = "2018"
 
 [dev-dependencies]
-serial_test_derive = { path="../serial_test_derive" }
 serial_test = { path="../serial_test" }
 lazy_static = "1.2"

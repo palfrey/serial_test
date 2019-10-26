@@ -113,6 +113,7 @@ version = "0.2.0"
 dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serial_test_derive 0.2.0",
 ]
 
 [[package]]
@@ -129,7 +130,6 @@ version = "0.2.0"
 dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serial_test 0.2.0",
- "serial_test_derive 0.2.0",
 ]
 
 [[package]]

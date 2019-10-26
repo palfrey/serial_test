@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use lazy_static::lazy_static;
-    use serial_test_derive::serial;
+    use serial_test::serial;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
     use std::thread;
