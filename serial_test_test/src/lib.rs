@@ -47,13 +47,14 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_fun() {
+    #[ignore]
+    fn test_ignore_fun() {
         assert_eq!(1 + 2, 3);
     }
 
     #[test]
     #[serial]
     fn test_reentrant_fun() {
-        test_fun();
+        test_ignore_fun();
     }
 }
