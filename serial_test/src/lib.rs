@@ -2,10 +2,10 @@
 //! Helper crate for [serial_test_derive](../serial_test_derive/index.html)
 
 use lazy_static::lazy_static;
+use parking_lot::ReentrantMutex;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, RwLock};
-use parking_lot::ReentrantMutex;
 
 lazy_static! {
     static ref LOCKS: Arc<RwLock<HashMap<String, ReentrantMutex<()>>>> =

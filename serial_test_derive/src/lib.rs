@@ -87,7 +87,22 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     let ast: syn::ItemFn = syn::parse(input).unwrap();
     let name = ast.ident;
     let block = ast.block;
-    let attrs = ast.attrs;
+    let attrs: Vec<syn::Attribute> = ast
+        .attrs
+        .into_iter()
+        .filter(|at| {
+            if let Ok(m) = at.parse_meta() {
+                if m.name().to_string() == "ignore" {
+                    // we skip ignore because the test framework already deals with it
+                    false
+                } else {
+                    true
+                }
+            } else {
+                true
+            }
+        })
+        .collect();
     let gen = quote! {
         #(#attrs)
         *
