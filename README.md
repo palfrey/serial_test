@@ -22,7 +22,7 @@ fn test_serial_another() {
 Multiple tests with the `serial` attribute are guaranteed to be executed in serial. Ordering of the tests is not guaranteed however.
 
 ## Usage
-We require at least Rust 1.30 for [attribute-like procedural macros](https://doc.rust-lang.org/reference/procedural-macros.html#attribute-macros) support.
+We require at least Rust 1.32 for [attribute-like procedural macros](https://doc.rust-lang.org/reference/procedural-macros.html#attribute-macros) support and [proc-macro2](https://github.com/alexcrichton/proc-macro2) being willing to build!
 
 Add to your Cargo.toml
 ```
