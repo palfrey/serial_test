@@ -44,4 +44,16 @@ mod tests {
         println!("End 3");
         assert_eq!(LOCK.load(Ordering::Relaxed), 3);
     }
+
+    #[test]
+    #[serial]
+    fn test_fun() {
+        assert_eq!(1 + 2, 3);
+    }
+
+    #[test]
+    #[serial]
+    fn test_reentrant_fun() {
+        test_fun();
+    }
 }

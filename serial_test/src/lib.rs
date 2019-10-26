@@ -4,10 +4,11 @@
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
+use parking_lot::ReentrantMutex;
 
 lazy_static! {
-    static ref LOCKS: Arc<RwLock<HashMap<String, Mutex<()>>>> =
+    static ref LOCKS: Arc<RwLock<HashMap<String, ReentrantMutex<()>>>> =
         Arc::new(RwLock::new(HashMap::new()));
 }
 
@@ -32,7 +33,7 @@ pub fn serial_core(name: &str, function: fn()) {
             .write()
             .unwrap()
             .deref_mut()
-            .insert(name.to_string(), Mutex::new(()));
+            .insert(name.to_string(), ReentrantMutex::new(()));
     }
     let unlock = LOCKS.read().unwrap();
     // _guard needs to be named to avoid being instant dropped

@@ -11,3 +11,4 @@ categories = ["development-tools::testing"]
 
 [dependencies]
 lazy_static = "1.2"
+parking_lot = "0.9"
