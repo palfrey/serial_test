@@ -1,21 +1,5 @@
 //! # serial_test_derive
-//! `serial_test_derive` allows for the creation of serialised Rust tests using the [serial](attr.serial.html) attribute
-//! e.g.
-//! ````
-//! #[test]
-//! #[serial]
-//! fn test_serial_one() {
-//!   // Do things
-//! }
-//!
-//! #[test]
-//! #[serial]
-//! fn test_serial_another() {
-//!   // Do things
-//! }
-//! ````
-//! Multiple tests with the [serial](attr.serial.html) attribute are guaranteed to be executed in serial. Ordering
-//! of the tests is not guaranteed however.
+//! Helper crate for [serial_test](../serial_test/index.html)
 
 extern crate proc_macro;
 

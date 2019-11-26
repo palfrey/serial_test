@@ -1,5 +1,21 @@
 //! # serial_test
-//! Helper crate for [serial_test_derive](../serial_test_derive/index.html)
+//! `serial_test` allows for the creation of serialised Rust tests using the [serial](attr.serial.html) attribute
+//! e.g.
+//! ````
+//! #[test]
+//! #[serial]
+//! fn test_serial_one() {
+//!   // Do things
+//! }
+//!
+//! #[test]
+//! #[serial]
+//! fn test_serial_another() {
+//!   // Do things
+//! }
+//! ````
+//! Multiple tests with the [serial](attr.serial.html) attribute are guaranteed to be executed in serial. Ordering
+//! of the tests is not guaranteed however.
 
 use lazy_static::lazy_static;
 use parking_lot::ReentrantMutex;
@@ -12,15 +28,7 @@ lazy_static! {
         Arc::new(RwLock::new(HashMap::new()));
 }
 
-/// Helper function for [serial_test_derive::serial](../serial_test_derive/attr.serial.html)
-/// ```
-/// #[test]
-/// fn test_serial_core() {
-///     serial_core("some key", || {
-///         println!("Bar");
-///     });
-/// }
-/// ```
+#[doc(hidden)]
 pub fn serial_core(name: &str, function: fn()) {
     // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
     let new_key = {
@@ -43,5 +51,4 @@ pub fn serial_core(name: &str, function: fn()) {
 
 // Re-export #[serial].
 #[allow(unused_imports)]
-#[doc(hidden)]
-pub use serial_test_derive::*;
+pub use serial_test_derive::serial;

@@ -1,6 +1,6 @@
 [package]
 name = "serial_test_derive"
-description = "Allows for the creation of serialised Rust tests"
+description = "Helper crate for serial_test"
 license = "MIT"
 version = "0.3.0"
 authors = ["Tom Parker-Shemilt <palfrey@tevp.net>"]
