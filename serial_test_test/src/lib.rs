@@ -57,4 +57,11 @@ mod tests {
     fn test_reentrant_fun() {
         test_ignore_fun();
     }
+
+    #[test]
+    #[serial]
+    #[should_panic]
+    fn test_should_panic_fun() {
+        panic!("Testing panic");
+    }
 }

@@ -76,8 +76,9 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
         .into_iter()
         .filter(|at| {
             if let Ok(m) = at.parse_meta() {
-                if m.name().to_string() == "ignore" {
-                    // we skip ignore because the test framework already deals with it
+                let name = m.name();
+                if name == "ignore" || name == "should_panic" {
+                    // we skip ignore/should_panic because the test framework already deals with it
                     false
                 } else {
                     true
