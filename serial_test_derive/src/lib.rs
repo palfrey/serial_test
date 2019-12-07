@@ -4,6 +4,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+use proc_macro2::TokenTree;
 use quote::quote;
 use syn;
 
@@ -57,12 +58,15 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     return serial_core(attr.into(), input.into()).into();
 }
 
-fn serial_core(attr: proc_macro2::TokenStream, input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
-    let attrs = attr.into_iter().collect::<Vec<proc_macro2::TokenTree>>();
+fn serial_core(
+    attr: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let attrs = attr.into_iter().collect::<Vec<TokenTree>>();
     let key = match attrs.len() {
         0 => "".to_string(),
         1 => {
-            if let proc_macro2::TokenTree::Ident(id) = &attrs[0] {
+            if let TokenTree::Ident(id) = &attrs[0] {
                 id.to_string()
             } else {
                 panic!("Expected a single name as argument, got {:?}", attrs);
