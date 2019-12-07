@@ -4,6 +4,7 @@
 [![Docs](https://docs.rs/serial_test/badge.svg)](https://docs.rs/serial_test/)
 ![MIT license](https://img.shields.io/crates/l/serial_test.svg)
 [![Build Status](https://travis-ci.com/palfrey/serial_test.svg?branch=master)](https://travis-ci.com/palfrey/serial_test)
+[![MSRV: 1.32.0](https://flat.badgen.net/badge/MSRV/1.32.0/purple)](https://blog.rust-lang.org/2019/01/17/Rust-1.32.0.html)
 
 `serial_test` allows for the creation of serialised Rust tests using the `serial` attribute
 e.g.
