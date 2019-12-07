@@ -125,3 +125,26 @@ fn test_serial() {
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
 }
+
+#[test]
+fn test_stripped_attributes() {
+    let attrs = proc_macro2::TokenStream::new();
+    let input = quote! {
+        #[test]
+        #[ignore]
+        #[should_panic]
+        #[something_else]
+        fn foo() {}
+    };
+    let stream = serial_core(attrs.into(), input);
+    let compare = quote! {
+        #[test]
+        #[something_else]
+        fn foo () {
+            serial_test::serial_core("", || {
+                {}
+            });
+        }
+    };
+    assert_eq!(format!("{}", compare), format!("{}", stream));
+}
