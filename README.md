@@ -1,8 +1,8 @@
 # serial_test
 [![Version](https://img.shields.io/crates/v/serial_test.svg)](https://crates.io/crates/serial_test)
-![Downloads](https://img.shields.io/crates/d/serial_test)
+[![Downloads](https://img.shields.io/crates/d/serial_test)](https://crates.io/crates/serial_test)
 [![Docs](https://docs.rs/serial_test/badge.svg)](https://docs.rs/serial_test/)
-![MIT license](https://img.shields.io/crates/l/serial_test.svg)
+[![MIT license](https://img.shields.io/crates/l/serial_test.svg)](./LICENSE)
 [![Build Status](https://travis-ci.com/palfrey/serial_test.svg?branch=master)](https://travis-ci.com/palfrey/serial_test)
 [![MSRV: 1.32.0](https://flat.badgen.net/badge/MSRV/1.32.0/purple)](https://blog.rust-lang.org/2019/01/17/Rust-1.32.0.html)
 
