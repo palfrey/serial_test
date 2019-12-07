@@ -3,7 +3,7 @@
 
 extern crate proc_macro;
 
-use proc_macro::{TokenStream, TokenTree};
+use proc_macro::TokenStream;
 use quote::quote;
 use syn;
 
@@ -54,32 +54,39 @@ use syn;
 /// but neither sequence will be blocked by the other
 #[proc_macro_attribute]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
-    let attrs = attr.into_iter().collect::<Vec<TokenTree>>();
+    return serial_core(attr.into(), input.into()).into();
+}
+
+fn serial_core(attr: proc_macro2::TokenStream, input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    let attrs = attr.into_iter().collect::<Vec<proc_macro2::TokenTree>>();
     let key = match attrs.len() {
         0 => "".to_string(),
         1 => {
-            if let TokenTree::Ident(id) = &attrs[0] {
+            if let proc_macro2::TokenTree::Ident(id) = &attrs[0] {
                 id.to_string()
             } else {
-                panic!("Expected a single name as argument");
+                panic!("Expected a single name as argument, got {:?}", attrs);
             }
         }
-        _ => {
-            panic!("Expected either 0 or 1 arguments");
+        n => {
+            panic!("Expected either 0 or 1 arguments, got {}: {:?}", n, attrs);
         }
     };
-    let ast: syn::ItemFn = syn::parse(input).unwrap();
-    let name = ast.ident;
+    let ast: syn::ItemFn = syn::parse2(input).unwrap();
+    let name = ast.sig.ident;
     let block = ast.block;
     let attrs: Vec<syn::Attribute> = ast
         .attrs
         .into_iter()
         .filter(|at| {
             if let Ok(m) = at.parse_meta() {
-                let name = m.name();
-                if name == "ignore" || name == "should_panic" {
-                    // we skip ignore/should_panic because the test framework already deals with it
-                    false
+                if let syn::Meta::Path(path) = m {
+                    if path.is_ident("ignore") || path.is_ident("should_panic") {
+                        // we skip ignore/should_panic because the test framework already deals with it
+                        false
+                    } else {
+                        true
+                    }
                 } else {
                     true
                 }
@@ -98,4 +105,23 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
         }
     };
     return gen.into();
+}
+
+#[test]
+fn test_serial() {
+    let attrs = proc_macro2::TokenStream::new();
+    let input = quote! {
+        #[test]
+        fn foo() {}
+    };
+    let stream = serial_core(attrs.into(), input);
+    let compare = quote! {
+        #[test]
+        fn foo () {
+            serial_test::serial_core("", || {
+                {}
+            });
+        }
+    };
+    assert_eq!(format!("{}", compare), format!("{}", stream));
 }
