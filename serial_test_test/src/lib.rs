@@ -11,13 +11,20 @@ mod tests {
         static ref LOCK: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));
     }
 
+    fn init() {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
+
     #[test]
     #[serial]
-    fn test_serial_no_arg() {}
+    fn test_serial_no_arg() {
+        init();
+    }
 
     #[test]
     #[serial(alpha)]
     fn test_serial_1() {
+        init();
         println!("Start 1");
         LOCK.store(1, Ordering::Relaxed);
         thread::sleep(Duration::from_millis(100));
@@ -28,6 +35,7 @@ mod tests {
     #[test]
     #[serial(alpha)]
     fn test_serial_2() {
+        init();
         println!("Start 2");
         LOCK.store(2, Ordering::Relaxed);
         thread::sleep(Duration::from_millis(200));
@@ -38,6 +46,7 @@ mod tests {
     #[test]
     #[serial(alpha)]
     fn test_serial_3() {
+        init();
         println!("Start 3");
         LOCK.store(3, Ordering::Relaxed);
         thread::sleep(Duration::from_millis(300));
@@ -49,12 +58,14 @@ mod tests {
     #[serial]
     #[ignore]
     fn test_ignore_fun() {
+        init();
         assert_eq!(1 + 2, 3);
     }
 
     #[test]
     #[serial]
     fn test_reentrant_fun() {
+        init();
         test_ignore_fun();
     }
 
@@ -62,6 +73,7 @@ mod tests {
     #[serial]
     #[should_panic]
     fn test_should_panic_fun() {
+        init();
         panic!("Testing panic");
     }
 }
