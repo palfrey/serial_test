@@ -84,13 +84,10 @@ fn serial_core(
         .into_iter()
         .filter(|at| {
             if let Ok(m) = at.parse_meta() {
-                if let syn::Meta::Path(path) = m {
-                    if path.is_ident("ignore") || path.is_ident("should_panic") {
-                        // we skip ignore/should_panic because the test framework already deals with it
-                        false
-                    } else {
-                        true
-                    }
+                let path = m.path();
+                if path.is_ident("ignore") || path.is_ident("should_panic") {
+                    // we skip ignore/should_panic because the test framework already deals with it
+                    false
                 } else {
                     true
                 }
@@ -132,11 +129,12 @@ fn test_serial() {
 
 #[test]
 fn test_stripped_attributes() {
+    let _ = env_logger::builder().is_test(true).try_init();
     let attrs = proc_macro2::TokenStream::new();
     let input = quote! {
         #[test]
         #[ignore]
-        #[should_panic]
+        #[should_panic(expected = "Testing panic")]
         #[something_else]
         fn foo() {}
     };
