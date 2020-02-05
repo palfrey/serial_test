@@ -76,4 +76,11 @@ mod tests {
         init();
         panic!("Testing panic");
     }
+
+    #[test]
+    #[serial]
+    fn test_can_return() -> Result<(), ()> {
+        let res: Result<(), ()> = Ok(());
+        res
+    }
 }

@@ -29,7 +29,7 @@ lazy_static! {
 }
 
 #[doc(hidden)]
-pub fn serial_core(name: &str, function: fn()) {
+pub fn serial_core<T>(name: &str, function: fn() -> T) -> T {
     // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
     let new_key = {
         let unlock = LOCKS.read().unwrap();
@@ -46,7 +46,7 @@ pub fn serial_core(name: &str, function: fn()) {
     let unlock = LOCKS.read().unwrap();
     // _guard needs to be named to avoid being instant dropped
     let _guard = unlock.deref()[name].lock();
-    function();
+    function()
 }
 
 // Re-export #[serial].
