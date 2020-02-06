@@ -28,8 +28,7 @@ lazy_static! {
         Arc::new(RwLock::new(HashMap::new()));
 }
 
-#[doc(hidden)]
-pub fn serial_core_with_return<E>(name: &str, function: fn() -> Result<(), E>) -> Result<(), E> {
+fn check_new_key(name: &str) {
     // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
     let new_key = {
         let unlock = LOCKS.read().unwrap();
@@ -43,6 +42,12 @@ pub fn serial_core_with_return<E>(name: &str, function: fn() -> Result<(), E>) -
             .deref_mut()
             .insert(name.to_string(), ReentrantMutex::new(()));
     }
+}
+
+#[doc(hidden)]
+pub fn serial_core_with_return<E>(name: &str, function: fn() -> Result<(), E>) -> Result<(), E> {
+    check_new_key(name);
+
     let unlock = LOCKS.read().unwrap();
     // _guard needs to be named to avoid being instant dropped
     let _guard = unlock.deref()[name].lock();
@@ -51,19 +56,8 @@ pub fn serial_core_with_return<E>(name: &str, function: fn() -> Result<(), E>) -
 
 #[doc(hidden)]
 pub fn serial_core(name: &str, function: fn()) {
-    // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
-    let new_key = {
-        let unlock = LOCKS.read().unwrap();
-        !unlock.deref().contains_key(name)
-    };
-    if new_key {
-        // This is the rare path, which avoids the multi-writer situation mostly
-        LOCKS
-            .write()
-            .unwrap()
-            .deref_mut()
-            .insert(name.to_string(), ReentrantMutex::new(()));
-    }
+    check_new_key(name);
+
     let unlock = LOCKS.read().unwrap();
     // _guard needs to be named to avoid being instant dropped
     let _guard = unlock.deref()[name].lock();
