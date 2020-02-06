@@ -29,7 +29,7 @@ lazy_static! {
 }
 
 #[doc(hidden)]
-pub fn serial_core<T>(name: &str, function: fn() -> T) -> T {
+pub fn serial_core_with_return<E>(name: &str, function: fn() -> Result<(), E>) -> Result<(), E> {
     // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
     let new_key = {
         let unlock = LOCKS.read().unwrap();
@@ -47,6 +47,27 @@ pub fn serial_core<T>(name: &str, function: fn() -> T) -> T {
     // _guard needs to be named to avoid being instant dropped
     let _guard = unlock.deref()[name].lock();
     function()
+}
+
+#[doc(hidden)]
+pub fn serial_core(name: &str, function: fn()) {
+    // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
+    let new_key = {
+        let unlock = LOCKS.read().unwrap();
+        !unlock.deref().contains_key(name)
+    };
+    if new_key {
+        // This is the rare path, which avoids the multi-writer situation mostly
+        LOCKS
+            .write()
+            .unwrap()
+            .deref_mut()
+            .insert(name.to_string(), ReentrantMutex::new(()));
+    }
+    let unlock = LOCKS.read().unwrap();
+    // _guard needs to be named to avoid being instant dropped
+    let _guard = unlock.deref()[name].lock();
+    function();
 }
 
 // Re-export #[serial].

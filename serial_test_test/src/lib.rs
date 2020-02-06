@@ -80,7 +80,6 @@ mod tests {
     #[test]
     #[serial]
     fn test_can_return() -> Result<(), ()> {
-        let res: Result<(), ()> = Ok(());
-        res
+        Ok(())
     }
 }
