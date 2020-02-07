@@ -7,6 +7,7 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use quote::quote;
 use syn;
+use std::ops::Deref;
 
 /// Allows for the creation of serialised Rust tests
 /// ````
@@ -78,6 +79,12 @@ fn serial_core(
     };
     let ast: syn::ItemFn = syn::parse2(input).unwrap();
     let name = ast.sig.ident;
+    let return_type = match ast.sig.output {
+        syn::ReturnType::Default => None,
+        syn::ReturnType::Type(_rarrow, ref box_type) => {
+            Some(box_type.deref())
+        }
+    };
     let block = ast.block;
     let attrs: Vec<syn::Attribute> = ast
         .attrs
@@ -96,13 +103,25 @@ fn serial_core(
             }
         })
         .collect();
-    let gen = quote! {
-        #(#attrs)
-        *
-        fn #name () {
-            serial_test::serial_core(#key, || {
-                #block
-            });
+    let gen = if let Some(ret) = return_type {
+        quote! {
+            #(#attrs)
+            *
+            fn #name () -> #ret {
+                serial_test::serial_core_with_return(#key, || {
+                    #block
+                })
+            }
+        }
+    } else {
+        quote! {
+            #(#attrs)
+            *
+            fn #name () {
+                serial_test::serial_core(#key, || {
+                    #block
+                });
+            }
         }
     };
     return gen.into();
