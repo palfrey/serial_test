@@ -5,3 +5,9 @@ rust:
  - stable
  - beta
  - nightly
+
+jobs:
+  include:
+    - name: minimal versions check
+      rust: nightly
+      script: rm Cargo.lock && cargo build -Z minimal-versions
