@@ -1,2 +1,3 @@
 /target
 *.jpg
+.DS_Store
