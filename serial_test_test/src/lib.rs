@@ -82,4 +82,16 @@ mod tests {
     fn test_can_return() -> Result<(), ()> {
         Ok(())
     }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_async_serial_no_arg() {
+        init();
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_async_can_return() -> Result<(), ()> {
+        Ok(())
+    }
 }
