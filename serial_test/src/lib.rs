@@ -26,8 +26,6 @@ use std::sync::{Arc, RwLock};
 lazy_static! {
     static ref LOCKS: Arc<RwLock<HashMap<String, ReentrantMutex<()>>>> =
         Arc::new(RwLock::new(HashMap::new()));
-    // TODO: static ref ASYNC_LOCKS: Arc<RwLock<HashMap<String, ReentrantMutex<()>>>> =
-    //        Arc::new(RwLock::new(HashMap::new()));
 }
 
 fn check_new_key(name: &str) {
