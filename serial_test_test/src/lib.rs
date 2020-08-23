@@ -66,7 +66,7 @@ mod tests {
     #[serial]
     fn test_reentrant_fun() {
         init();
-        test_ignore_fun();
+        test_serial_no_arg();
     }
 
     #[test]
