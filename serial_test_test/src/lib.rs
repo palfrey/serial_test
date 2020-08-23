@@ -59,7 +59,7 @@ mod tests {
     #[ignore]
     fn test_ignore_fun() {
         init();
-        assert_eq!(1 + 2, 3);
+        assert_eq!(2 + 2, 5);
     }
 
     #[test]
