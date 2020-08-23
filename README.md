@@ -21,7 +21,7 @@ fn test_serial_another() {
   // Do things
 }
 
-#[test]
+#[tokio::test]
 #[serial]
 async fn test_serial_another() {
   // Do things asynchronously

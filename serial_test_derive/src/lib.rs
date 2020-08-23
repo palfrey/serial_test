@@ -195,12 +195,12 @@ fn test_stripped_attributes() {
 fn test_serial_async() {
     let attrs = proc_macro2::TokenStream::new();
     let input = quote! {
-        #[test]
+        #[tokio::test]
         async fn foo() {}
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        #[test]
+        #[tokio::test]
         async fn foo () {
             serial_test::async_serial_core("", || async {
                 {}
