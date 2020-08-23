@@ -214,12 +214,12 @@ fn test_serial_async() {
 fn test_serial_async_return() {
     let attrs = proc_macro2::TokenStream::new();
     let input = quote! {
-        #[test]
+        #[tokio::test]
         async fn foo() -> Result<(), ()> { Ok(()) }
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        #[test]
+        #[tokio::test]
         async fn foo () -> Result<(), ()> {
             serial_test::async_serial_core_with_return("", || async {
                 { Ok(()) }
