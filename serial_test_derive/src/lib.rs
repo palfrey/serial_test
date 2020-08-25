@@ -6,8 +6,8 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use quote::quote;
-use syn;
 use std::ops::Deref;
+use syn;
 
 /// Allows for the creation of serialised Rust tests
 /// ````
@@ -78,12 +78,11 @@ fn serial_core(
         }
     };
     let ast: syn::ItemFn = syn::parse2(input).unwrap();
+    let asyncness = ast.sig.asyncness;
     let name = ast.sig.ident;
     let return_type = match ast.sig.output {
         syn::ReturnType::Default => None,
-        syn::ReturnType::Type(_rarrow, ref box_type) => {
-            Some(box_type.deref())
-        }
+        syn::ReturnType::Type(_rarrow, ref box_type) => Some(box_type.deref()),
     };
     let block = ast.block;
     let attrs: Vec<syn::Attribute> = ast
@@ -104,24 +103,46 @@ fn serial_core(
         })
         .collect();
     let gen = if let Some(ret) = return_type {
-        quote! {
-            #(#attrs)
-            *
-            fn #name () -> #ret {
-                serial_test::serial_core_with_return(#key, || {
-                    #block
-                })
-            }
+        match asyncness {
+            Some(_) => quote! {
+                #(#attrs)
+                *
+                async fn #name () -> #ret {
+                    serial_test::async_serial_core_with_return(#key, || async {
+                        #block
+                    }).await;
+                }
+            },
+            None => quote! {
+                #(#attrs)
+                *
+                fn #name () -> #ret {
+                    serial_test::serial_core_with_return(#key, || {
+                        #block
+                    })
+                }
+            },
         }
     } else {
-        quote! {
-            #(#attrs)
-            *
-            fn #name () {
-                serial_test::serial_core(#key, || {
-                    #block
-                });
-            }
+        match asyncness {
+            Some(_) => quote! {
+                #(#attrs)
+                *
+                async fn #name () {
+                    serial_test::async_serial_core(#key, || async {
+                        #block
+                    }).await;
+                }
+            },
+            None => quote! {
+                #(#attrs)
+                *
+                fn #name () {
+                    serial_test::serial_core(#key, || {
+                        #block
+                    });
+                }
+            },
         }
     };
     return gen.into();
@@ -165,6 +186,44 @@ fn test_stripped_attributes() {
             serial_test::serial_core("", || {
                 {}
             });
+        }
+    };
+    assert_eq!(format!("{}", compare), format!("{}", stream));
+}
+
+#[test]
+fn test_serial_async() {
+    let attrs = proc_macro2::TokenStream::new();
+    let input = quote! {
+        #[tokio::test]
+        async fn foo() {}
+    };
+    let stream = serial_core(attrs.into(), input);
+    let compare = quote! {
+        #[tokio::test]
+        async fn foo () {
+            serial_test::async_serial_core("", || async {
+                {}
+            }).await;
+        }
+    };
+    assert_eq!(format!("{}", compare), format!("{}", stream));
+}
+
+#[test]
+fn test_serial_async_return() {
+    let attrs = proc_macro2::TokenStream::new();
+    let input = quote! {
+        #[tokio::test]
+        async fn foo() -> Result<(), ()> { Ok(()) }
+    };
+    let stream = serial_core(attrs.into(), input);
+    let compare = quote! {
+        #[tokio::test]
+        async fn foo () -> Result<(), ()> {
+            serial_test::async_serial_core_with_return("", || async {
+                { Ok(()) }
+            }).await;
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));

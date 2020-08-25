@@ -64,6 +64,29 @@ pub fn serial_core(name: &str, function: fn()) {
     function();
 }
 
+#[doc(hidden)]
+pub async fn async_serial_core_with_return<E>(
+    name: &str,
+    fut: impl std::future::Future<Output = Result<(), E>>,
+) -> Result<(), E> {
+    check_new_key(name);
+
+    let unlock = LOCKS.read().unwrap();
+    // _guard needs to be named to avoid being instant dropped
+    let _guard = unlock.deref()[name].lock();
+    fut.await
+}
+
+#[doc(hidden)]
+pub async fn async_serial_core(name: &str, fut: impl std::future::Future<Output = ()>) {
+    check_new_key(name);
+
+    let unlock = LOCKS.read().unwrap();
+    // _guard needs to be named to avoid being instant dropped
+    let _guard = unlock.deref()[name].lock();
+    fut.await
+}
+
 // Re-export #[serial].
 #[allow(unused_imports)]
 pub use serial_test_derive::serial;

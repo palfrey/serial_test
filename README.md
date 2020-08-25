@@ -4,7 +4,7 @@
 [![Docs](https://docs.rs/serial_test/badge.svg)](https://docs.rs/serial_test/)
 [![MIT license](https://img.shields.io/crates/l/serial_test.svg)](./LICENSE)
 [![Build Status](https://travis-ci.com/palfrey/serial_test.svg?branch=master)](https://travis-ci.com/palfrey/serial_test)
-[![MSRV: 1.36.0](https://flat.badgen.net/badge/MSRV/1.36.0/purple)](https://blog.rust-lang.org/2019/07/04/Rust-1.36.0.html)
+[![MSRV: 1.39.0](https://flat.badgen.net/badge/MSRV/1.39.0/purple)](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html)
 
 `serial_test` allows for the creation of serialised Rust tests using the `serial` attribute
 e.g.
@@ -20,11 +20,17 @@ fn test_serial_one() {
 fn test_serial_another() {
   // Do things
 }
+
+#[tokio::test]
+#[serial]
+async fn test_serial_another() {
+  // Do things asynchronously
+}
 ```
 Multiple tests with the `serial` attribute are guaranteed to be executed in serial. Ordering of the tests is not guaranteed however.
 
 ## Usage
-We require at least Rust 1.36 for [attribute-like procedural macros](https://doc.rust-lang.org/reference/procedural-macros.html#attribute-macros) support (and [parking_lot using smallvec 1.0](https://github.com/Amanieu/parking_lot/pull/188))
+We require at least Rust 1.39 for [async/await](https://blog.rust-lang.org/2019/11/07/Async-await-stable.html) support
 
 Add to your Cargo.toml
 ```toml
