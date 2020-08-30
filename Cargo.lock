@@ -185,16 +185,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "serial_test"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serial_test_derive 0.4.0",
+ "serial_test_derive 0.5.0",
 ]
 
 [[package]]
 name = "serial_test_derive"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -204,11 +204,11 @@ dependencies = [
 
 [[package]]
 name = "serial_test_test"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serial_test 0.4.0",
+ "serial_test 0.5.0",
  "tokio 0.2.22 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
