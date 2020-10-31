@@ -5,6 +5,7 @@
 [![MIT license](https://img.shields.io/crates/l/serial_test.svg)](./LICENSE)
 [![Build Status](https://travis-ci.com/palfrey/serial_test.svg?branch=master)](https://travis-ci.com/palfrey/serial_test)
 [![MSRV: 1.39.0](https://flat.badgen.net/badge/MSRV/1.39.0/purple)](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html)
+[![dependency status](https://deps.rs/repo/github/palfrey/serial_test/status.svg)](https://deps.rs/repo/github/palfrey/serial_test)
 
 `serial_test` allows for the creation of serialised Rust tests using the `serial` attribute
 e.g.
