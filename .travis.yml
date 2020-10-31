@@ -7,7 +7,6 @@ rust:
  - nightly
 
 script:
-  - rm Cargo.lock
   - cargo build
   - cargo test
 
