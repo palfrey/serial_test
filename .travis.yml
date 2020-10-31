@@ -6,6 +6,11 @@ rust:
  - beta
  - nightly
 
+script:
+  - rm Cargo.lock
+  - cargo build
+  - cargo test
+
 jobs:
   include:
     - name: minimal versions check
