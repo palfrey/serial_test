@@ -1,0 +1,46 @@
+on: 
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 1 * *'
+
+name: Continuous integration
+
+jobs:
+  test:
+    name: Test suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          - nightly
+          - 1.39.0
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+  minimal-versions:
+    name: minimal versions check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - name: Remove lock
+        run: rm Cargo.lock
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -Z minimal-versions
