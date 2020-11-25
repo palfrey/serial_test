@@ -26,7 +26,7 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: test
 
   minimal-versions:
     name: minimal versions check
