@@ -96,4 +96,10 @@ mod tests {
         init();
         Ok(())
     }
+
+    #[serial]
+    async fn test_async_can_return_zima() -> Result<(), ()> {
+        init();
+        Ok(())
+    }
 }

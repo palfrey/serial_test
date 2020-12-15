@@ -5,7 +5,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
-use quote::quote;
+use quote::{quote, ToTokens};
 use std::ops::Deref;
 use syn;
 
@@ -85,12 +85,30 @@ fn serial_core(
         syn::ReturnType::Type(_rarrow, ref box_type) => Some(box_type.deref()),
     };
     let block = ast.block;
+    let mut gen_reactor = false;
     let attrs: Vec<syn::Attribute> = ast
         .attrs
         .into_iter()
         .filter(|at| {
             if let Ok(m) = at.parse_meta() {
                 let path = m.path();
+                if path.segments.len() == 2 {
+                    if path.segments[1].ident.to_string() == "test"
+                        && (path.segments[0].ident.to_string() == "tokio"
+                            || path.segments[0].ident.to_string() == "actix_rt")
+                    {
+                        gen_reactor = true;
+                        println!(
+                            "path ts: {:?} [{}]",
+                            path.to_token_stream(),
+                            path.segments.len()
+                        );
+                        // we skip tokio::test and generate reactor code ourselves, because double
+                        // procedural macro invocations does not communicate compile errors well
+                        return false;
+                    }
+                }
+
                 if path.is_ident("ignore") || path.is_ident("should_panic") {
                     // we skip ignore/should_panic because the test framework already deals with it
                     false
@@ -104,18 +122,27 @@ fn serial_core(
         .collect();
     let gen = if let Some(ret) = return_type {
         match asyncness {
-            Some(_) => quote! {
-                #(#attrs)
-                *
-                async fn #name () -> #ret {
-                    serial_test::async_serial_core_with_return(#key, || async {
-                        #block
-                    }).await;
+            Some(_) => {
+                if gen_reactor {
+                    quote! {
+                        #(#attrs)*
+                        fn #name () -> #ret {
+                            tokio::runtime::Runtime::new().unwrap().block_on(
+                                serial_test::async_serial_core_with_return(#key, || async { #block } )
+                            )
+                        }
+                    }
+                } else {
+                    quote! {
+                        #(#attrs)*
+                        async fn #name () -> #ret {
+                            serial_test::async_serial_core_with_return(#key, || async { #block }).await;
+                        }
+                    }
                 }
-            },
+            }
             None => quote! {
-                #(#attrs)
-                *
+                #(#attrs)*
                 fn #name () -> #ret {
                     serial_test::serial_core_with_return(#key, || {
                         #block
@@ -125,15 +152,25 @@ fn serial_core(
         }
     } else {
         match asyncness {
-            Some(_) => quote! {
-                #(#attrs)
-                *
-                async fn #name () {
-                    serial_test::async_serial_core(#key, || async {
-                        #block
-                    }).await;
+            Some(_) => {
+                if gen_reactor {
+                    quote! {
+                        #(#attrs)*
+                        fn #name () {
+                            tokio::runtime::Runtime::new().unwrap().block_on(
+                                serial_test::async_serial_core(#key, || async { #block } )
+                            )
+                        }
+                    }
+                } else {
+                    quote! {
+                        #(#attrs)*
+                        async fn #name () {
+                            serial_test::async_serial_core(#key, || async { #block }).await;
+                        }
+                    }
                 }
-            },
+            }
             None => quote! {
                 #(#attrs)
                 *
@@ -195,16 +232,17 @@ fn test_stripped_attributes() {
 fn test_serial_async() {
     let attrs = proc_macro2::TokenStream::new();
     let input = quote! {
-        #[tokio::test]
+        #[actix_rt::test]
         async fn foo() {}
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        #[tokio::test]
-        async fn foo () {
-            serial_test::async_serial_core("", || async {
-                {}
-            }).await;
+        fn foo () {
+            tokio::runtime::Runtime::new().unwrap().block_on (
+                serial_test::async_serial_core("", || async {
+                    {}
+                })
+            )
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -219,9 +257,30 @@ fn test_serial_async_return() {
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        #[tokio::test]
+        fn foo () -> Result<(), ()> {
+            tokio::runtime::Runtime::new().unwrap().block_on (
+                serial_test::async_serial_core_with_return("", || async {
+                    { Ok(()) }
+                })
+            )
+        }
+    };
+    assert_eq!(format!("{}", compare), format!("{}", stream));
+}
+
+#[test]
+fn test_serial_async_return_reactor() {
+    use quote::TokenStreamExt;
+    let mut attrs = proc_macro2::TokenStream::new();
+    attrs.append(syn::parse_str::<proc_macro2::Ident>("key").unwrap());
+    let input = quote! {
+        async fn foo() -> Result<(), ()> { Ok(()) }
+    };
+    let stream = serial_core(attrs.into(), input);
+    let compare = quote! {
         async fn foo () -> Result<(), ()> {
-            serial_test::async_serial_core_with_return("", || async {
+            serial_test::async_serial_core_with_return("key", ||
+             async {
                 { Ok(()) }
             }).await;
         }
