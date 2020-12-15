@@ -103,4 +103,10 @@ mod tests {
         init();
         Ok(())
     }
+
+    #[serial]
+    async fn test_async() {
+        init();
+    }
+
 }

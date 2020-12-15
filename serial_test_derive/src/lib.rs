@@ -125,9 +125,10 @@ fn serial_core(
                 if gen_reactor {
                     quote! {
                         #(#attrs)*
+                        #[test]
                         fn #name () -> #ret {
                             tokio::runtime::Runtime::new().unwrap().block_on(
-                                serial_test::async_serial_core_with_return(#key, || async { #block } )
+                                serial_test::async_serial_core_with_return(#key, async { #block } )
                             )
                         }
                     }
@@ -155,9 +156,10 @@ fn serial_core(
                 if gen_reactor {
                     quote! {
                         #(#attrs)*
+                        #[test]
                         fn #name () {
                             tokio::runtime::Runtime::new().unwrap().block_on(
-                                serial_test::async_serial_core(#key, || async { #block } )
+                                serial_test::async_serial_core(#key, async { #block } )
                             )
                         }
                     }
@@ -275,10 +277,33 @@ fn test_serial_async_return_reactor() {
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
+        #[test]
         fn foo () -> Result<(), ()> {
             tokio::runtime::Runtime::new().unwrap().block_on (
-                serial_test::async_serial_core_with_return("key", || async {
+                serial_test::async_serial_core_with_return("key", async {
                     { Ok(()) }
+                })
+            )
+        }
+    };
+    assert_eq!(format!("{}", compare), format!("{}", stream));
+}
+
+#[test]
+fn test_serial_async_reactor() {
+    use quote::TokenStreamExt;
+    let mut attrs = proc_macro2::TokenStream::new();
+    attrs.append(syn::parse_str::<proc_macro2::Ident>("key").unwrap());
+    let input = quote! {
+        async fn foo() { () }
+    };
+    let stream = serial_core(attrs.into(), input);
+    let compare = quote! {
+        #[test]
+        fn foo () {
+            tokio::runtime::Runtime::new().unwrap().block_on (
+                serial_test::async_serial_core("key", async {
+                    { () }
                 })
             )
         }
