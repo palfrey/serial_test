@@ -97,8 +97,9 @@ mod tests {
         Ok(())
     }
 
+    #[actix_rt::test]
     #[serial]
-    async fn test_async_can_return_zima() -> Result<(), ()> {
+    async fn test_async_can_return_actix() -> Result<(), ()> {
         init();
         Ok(())
     }
