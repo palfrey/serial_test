@@ -85,7 +85,7 @@ fn serial_core(
         syn::ReturnType::Type(_rarrow, ref box_type) => Some(box_type.deref()),
     };
     let block = ast.block;
-    let mut gen_reactor = false;
+    let mut gen_reactor = true;
     let attrs: Vec<syn::Attribute> = ast
         .attrs
         .into_iter()
@@ -97,15 +97,14 @@ fn serial_core(
                         && (path.segments[0].ident.to_string() == "tokio"
                             || path.segments[0].ident.to_string() == "actix_rt")
                     {
-                        gen_reactor = true;
+                        // we will generate reactor code ourselves for async fns
+                        gen_reactor = false;
                         println!(
                             "path ts: {:?} [{}]",
                             path.to_token_stream(),
                             path.segments.len()
                         );
-                        // we skip tokio::test and generate reactor code ourselves, because double
-                        // procedural macro invocations does not communicate compile errors well
-                        return false;
+                        return true;
                     }
                 }
 
@@ -237,12 +236,11 @@ fn test_serial_async() {
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        fn foo () {
-            tokio::runtime::Runtime::new().unwrap().block_on (
-                serial_test::async_serial_core("", || async {
-                    {}
-                })
-            )
+        #[actix_rt::test]
+        async fn foo () {
+            serial_test::async_serial_core("", || async {
+                {}
+            }).await;
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -257,12 +255,11 @@ fn test_serial_async_return() {
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        fn foo () -> Result<(), ()> {
-            tokio::runtime::Runtime::new().unwrap().block_on (
-                serial_test::async_serial_core_with_return("", || async {
-                    { Ok(()) }
-                })
-            )
+        #[tokio::test]
+        async fn foo () -> Result<(), ()> {
+            serial_test::async_serial_core_with_return("", || async {
+                { Ok(()) }
+            }).await;
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -278,11 +275,12 @@ fn test_serial_async_return_reactor() {
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        async fn foo () -> Result<(), ()> {
-            serial_test::async_serial_core_with_return("key", ||
-             async {
-                { Ok(()) }
-            }).await;
+        fn foo () -> Result<(), ()> {
+            tokio::runtime::Runtime::new().unwrap().block_on (
+                serial_test::async_serial_core_with_return("key", || async {
+                    { Ok(()) }
+                })
+            )
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
