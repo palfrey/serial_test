@@ -127,7 +127,7 @@ fn serial_core(
                         #(#attrs)*
                         #[test]
                         fn #name () -> #ret {
-                            tokio::runtime::Runtime::new().unwrap().block_on(
+                            actix_rt::System::new("test").block_on(
                                 serial_test::async_serial_core_with_return(#key, async { #block } )
                             )
                         }
@@ -158,7 +158,7 @@ fn serial_core(
                         #(#attrs)*
                         #[test]
                         fn #name () {
-                            tokio::runtime::Runtime::new().unwrap().block_on(
+                            actix_rt::System::new("test").block_on(
                                 serial_test::async_serial_core(#key, async { #block } )
                             )
                         }
@@ -279,7 +279,7 @@ fn test_serial_async_return_reactor() {
     let compare = quote! {
         #[test]
         fn foo () -> Result<(), ()> {
-            tokio::runtime::Runtime::new().unwrap().block_on (
+            actix_rt::System::new("test").block_on (
                 serial_test::async_serial_core_with_return("key", async {
                     { Ok(()) }
                 })
@@ -301,7 +301,7 @@ fn test_serial_async_reactor() {
     let compare = quote! {
         #[test]
         fn foo () {
-            tokio::runtime::Runtime::new().unwrap().block_on (
+            actix_rt::System::new("test").block_on (
                 serial_test::async_serial_core("key", async {
                     { () }
                 })
