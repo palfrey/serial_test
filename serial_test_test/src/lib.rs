@@ -21,6 +21,15 @@ mod tests {
         init();
     }
 
+
+    // will emit warning in this order of tags
+    #[serial]
+    #[test]
+    fn test_serial_no_arg_reorder() {
+        init();
+    }
+
+
     #[test]
     #[serial(alpha)]
     fn test_serial_1() {
@@ -109,4 +118,25 @@ mod tests {
         init();
     }
 
+    #[serial]
+    #[ignore]
+    async fn test_async_ignore() {
+        init();
+    }
+
+    #[serial]
+    #[ignore]
+    async fn test_async_ignore_reorder() {
+        init();
+    }
+
+    #[serial({actix_rt})]
+    async fn test_async_actix_rt() {
+        init();
+    }
+
+    #[serial(key{actix_rt})]
+    async fn test_async_key_actix_rt() {
+        init();
+    }
 }

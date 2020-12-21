@@ -4,7 +4,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::TokenTree;
+use proc_macro2::{TokenTree, Group, Ident};
 use quote::{quote, ToTokens};
 use std::ops::Deref;
 use syn;
@@ -64,17 +64,27 @@ fn serial_core(
     input: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     let attrs = attr.into_iter().collect::<Vec<TokenTree>>();
-    let key = match attrs.len() {
-        0 => "".to_string(),
+    let (key,reactor) = match attrs.len() {
+        0 => ("".to_string(), None),
         1 => {
-            if let TokenTree::Ident(id) = &attrs[0] {
-                id.to_string()
-            } else {
-                panic!("Expected a single name as argument, got {:?}", attrs);
+            match &attrs[0]  {
+                TokenTree::Ident(id) => (id.to_string(), None),
+                TokenTree::Group(g) => ("".into(), Some(parse_reactor(&attrs, g))),
+                _ => panic!("Expected a single name or {{reactor_name}} as argument, got {:?}", attrs),
             }
         }
+        2 => {
+            (match &attrs[0]  {
+                TokenTree::Ident(id) => id.to_string(),
+                _ => panic!("Expected a single name as first argument, got {:?}", attrs),
+            },
+            match &attrs[1]  {
+                TokenTree::Group(g) => Some(parse_reactor(&attrs, g)),
+                _ => panic!("Expected a {{reactor_name}} as second argument, got {:?}", attrs),
+            })
+        }
         n => {
-            panic!("Expected either 0 or 1 arguments, got {}: {:?}", n, attrs);
+            panic!("Expected either 0, 1 or 2 arguments, got {}: {:?}", n, attrs);
         }
     };
     let ast: syn::ItemFn = syn::parse2(input).unwrap();
@@ -86,48 +96,49 @@ fn serial_core(
     };
     let block = ast.block;
     let mut gen_reactor = true;
-    let attrs: Vec<syn::Attribute> = ast
-        .attrs
-        .into_iter()
-        .filter(|at| {
-            if let Ok(m) = at.parse_meta() {
-                let path = m.path();
-                if path.segments.len() == 2 {
-                    if path.segments[1].ident.to_string() == "test"
-                        && (path.segments[0].ident.to_string() == "tokio"
-                            || path.segments[0].ident.to_string() == "actix_rt")
-                    {
-                        // we will generate reactor code ourselves for async fns
-                        gen_reactor = false;
-                        println!(
-                            "path ts: {:?} [{}]",
-                            path.to_token_stream(),
-                            path.segments.len()
-                        );
-                        return true;
-                    }
-                }
-
-                if path.is_ident("ignore") || path.is_ident("should_panic") {
-                    // we skip ignore/should_panic because the test framework already deals with it
-                    false
-                } else {
-                    true
-                }
-            } else {
-                true
+    let mut gen_test_tag = true;
+    let attrs = ast.attrs;
+    for at in &attrs {
+        if let Ok(m) = at.parse_meta() {
+            let path = m.path();
+            if path.is_ident("test") {
+                gen_test_tag = false;
             }
-        })
-        .collect();
+
+            if path.segments.len() == 2 {
+                if path.segments[1].ident.to_string() == "test"
+                    && (path.segments[0].ident.to_string() == "tokio"
+                        || path.segments[0].ident.to_string() == "actix_rt")
+                {
+                    // we will generate reactor code ourselves for async fns
+                    gen_reactor = false;
+                    println!(
+                        "will not generate reactor code since test is wrapped with: {:?} [{}]",
+                        path.to_token_stream(),
+                        path.segments.len()
+                    );
+                }
+            }
+        };
+    }
+    let test_tag = match gen_test_tag {
+        false => quote!{},
+        true => quote!{ #[test] },
+    };
+
+    let reactor = reactor
+        .map(|_r| quote!{tokio::runtime::Runtime::new().unwrap().block_on})
+        .unwrap_or(quote!{actix_rt::System::new("test").block_on});
+
     let gen = if let Some(ret) = return_type {
         match asyncness {
             Some(_) => {
                 if gen_reactor {
                     quote! {
+                        #test_tag
                         #(#attrs)*
-                        #[test]
                         fn #name () -> #ret {
-                            actix_rt::System::new("test").block_on(
+                            #reactor (
                                 serial_test::async_serial_core_with_return(#key, async { #block } )
                             )
                         }
@@ -142,6 +153,7 @@ fn serial_core(
                 }
             }
             None => quote! {
+                #test_tag
                 #(#attrs)*
                 fn #name () -> #ret {
                     serial_test::serial_core_with_return(#key, || {
@@ -155,10 +167,10 @@ fn serial_core(
             Some(_) => {
                 if gen_reactor {
                     quote! {
+                        #test_tag
                         #(#attrs)*
-                        #[test]
                         fn #name () {
-                            actix_rt::System::new("test").block_on(
+                            #reactor (
                                 serial_test::async_serial_core(#key, async { #block } )
                             )
                         }
@@ -173,8 +185,8 @@ fn serial_core(
                 }
             }
             None => quote! {
-                #(#attrs)
-                *
+                #test_tag
+                #(#attrs)*
                 fn #name () {
                     serial_test::serial_core(#key, || {
                         #block
@@ -186,11 +198,21 @@ fn serial_core(
     return gen.into();
 }
 
+fn parse_reactor(attrs: &Vec<TokenTree>, g: &Group) -> Ident {
+    let g :Vec<TokenTree>= g.stream().into_iter().collect();
+    if g.len() != 1 {
+        panic!("Expected a single {{reactor_name}} as argument, got {:?}", attrs);
+    }
+    match &g[0] {
+        TokenTree::Ident(reactor) => reactor.clone(),
+        _ => panic!("Expected a single {{reactor_name}} as argument, got {:?}", attrs),
+    }
+}
+
 #[test]
 fn test_serial() {
     let attrs = proc_macro2::TokenStream::new();
     let input = quote! {
-        #[test]
         fn foo() {}
     };
     let stream = serial_core(attrs.into(), input);
@@ -210,7 +232,6 @@ fn test_stripped_attributes() {
     let _ = env_logger::builder().is_test(true).try_init();
     let attrs = proc_macro2::TokenStream::new();
     let input = quote! {
-        #[test]
         #[ignore]
         #[should_panic(expected = "Testing panic")]
         #[something_else]
@@ -219,6 +240,8 @@ fn test_stripped_attributes() {
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
         #[test]
+        #[ignore]
+        #[should_panic(expected = "Testing panic")]
         #[something_else]
         fn foo () {
             serial_test::serial_core("", || {
