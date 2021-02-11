@@ -97,7 +97,7 @@ fn serial_core(
             }
         })
         .collect();
-    let gen = if let Some(ret) = return_type {
+    if let Some(ret) = return_type {
         match asyncness {
             Some(_) => quote! {
                 #(#attrs)
@@ -139,8 +139,7 @@ fn serial_core(
                 }
             },
         }
-    };
-    gen
+    }
 }
 
 #[test]
