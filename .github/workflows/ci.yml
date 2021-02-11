@@ -24,7 +24,7 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-          components: clippy
+          components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v1
       - name: Check formatting
         uses: actions-rs/cargo@v1
