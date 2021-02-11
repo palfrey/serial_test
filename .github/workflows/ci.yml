@@ -33,6 +33,8 @@ jobs:
           args: -- --check
       - name: Clippy
         uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: -Dwarnings
         with:
           command: clippy
       - name: Build and test
