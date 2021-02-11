@@ -7,7 +7,6 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use quote::quote;
 use std::ops::Deref;
-use syn;
 
 /// Allows for the creation of serialised Rust tests
 /// ````
@@ -56,7 +55,7 @@ use syn;
 /// but neither sequence will be blocked by the other
 #[proc_macro_attribute]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
-    return serial_core(attr.into(), input.into()).into();
+    serial_core(attr.into(), input.into()).into()
 }
 
 fn serial_core(
@@ -91,18 +90,14 @@ fn serial_core(
         .filter(|at| {
             if let Ok(m) = at.parse_meta() {
                 let path = m.path();
-                if path.is_ident("ignore") || path.is_ident("should_panic") {
-                    // we skip ignore/should_panic because the test framework already deals with it
-                    false
-                } else {
-                    true
-                }
+                // we skip ignore/should_panic because the test framework already deals with it
+                !(path.is_ident("ignore") || path.is_ident("should_panic"))
             } else {
                 true
             }
         })
         .collect();
-    let gen = if let Some(ret) = return_type {
+    if let Some(ret) = return_type {
         match asyncness {
             Some(_) => quote! {
                 #(#attrs)
@@ -144,8 +139,7 @@ fn serial_core(
                 }
             },
         }
-    };
-    return gen.into();
+    }
 }
 
 #[test]

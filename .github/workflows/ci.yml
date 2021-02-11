@@ -24,7 +24,21 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - uses: actions-rs/cargo@v1
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v1
+      - name: Check formatting
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
+      - name: Clippy
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: -Dwarnings
+        with:
+          command: clippy
+      - name: Build and test
+        uses: actions-rs/cargo@v1
         with:
           command: test
 
