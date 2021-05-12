@@ -18,7 +18,7 @@ jobs:
           - nightly
           - 1.39.0
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
       - uses: actions-rs/toolchain@v1.0.7
         with:
           profile: minimal
@@ -46,7 +46,7 @@ jobs:
     name: minimal versions check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
       - uses: actions-rs/toolchain@v1.0.7
         with:
           profile: minimal
