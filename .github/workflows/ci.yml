@@ -27,18 +27,18 @@ jobs:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v1
       - name: Check formatting
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.3
         with:
           command: fmt
           args: -- --check
       - name: Clippy
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.3
         env:
           RUSTFLAGS: -Dwarnings
         with:
           command: clippy
       - name: Build and test
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.3
         with:
           command: test
 
@@ -54,7 +54,7 @@ jobs:
           override: true
       - name: Remove lock
         run: rm Cargo.lock
-      - uses: actions-rs/cargo@v1
+      - uses: actions-rs/cargo@v1.0.3
         with:
           command: build
           args: -Z minimal-versions
