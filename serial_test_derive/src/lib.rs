@@ -94,7 +94,7 @@ fn serial_core(
                 let path = m.path();
                 if asyncness.is_some()
                     && path.segments.len() == 2
-                    && path.segments[1].ident.to_string() == "test"
+                    && path.segments[1].ident == "test"
                 {
                     // We assume that any 2-part attribute with the second part as "test" on an async function
                     // is the "do this test with reactor" wrapper. This is true for actix, tokio and async_std.
