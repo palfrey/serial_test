@@ -5,6 +5,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
+use proc_macro_error::{abort_call_site, proc_macro_error};
 use quote::quote;
 use std::ops::Deref;
 
@@ -54,6 +55,7 @@ use std::ops::Deref;
 /// `test_serial_one` and `test_serial_another` will be executed in serial, as will `test_serial_third` and `test_serial_fourth`
 /// but neither sequence will be blocked by the other
 #[proc_macro_attribute]
+#[proc_macro_error]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     serial_core(attr.into(), input.into()).into()
 }
@@ -90,6 +92,15 @@ fn serial_core(
         .filter(|at| {
             if let Ok(m) = at.parse_meta() {
                 let path = m.path();
+                if asyncness.is_some()
+                    && path.segments.len() == 2
+                    && path.segments[1].ident.to_string() == "test"
+                {
+                    // We assume that any 2-part attribute with the second part as "test" on an async function
+                    // is the "do this test with reactor" wrapper. This is true for actix, tokio and async_std.
+                    abort_call_site!("Found async test attribute after serial, which will break");
+                }
+
                 // we skip ignore/should_panic because the test framework already deals with it
                 !(path.is_ident("ignore") || path.is_ident("should_panic"))
             } else {
@@ -189,12 +200,10 @@ fn test_stripped_attributes() {
 fn test_serial_async() {
     let attrs = proc_macro2::TokenStream::new();
     let input = quote! {
-        #[tokio::test]
         async fn foo() {}
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        #[tokio::test]
         async fn foo () {
             serial_test::async_serial_core("", || async {
                 {}
@@ -208,12 +217,10 @@ fn test_serial_async() {
 fn test_serial_async_return() {
     let attrs = proc_macro2::TokenStream::new();
     let input = quote! {
-        #[tokio::test]
         async fn foo() -> Result<(), ()> { Ok(()) }
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        #[tokio::test]
         async fn foo () -> Result<(), ()> {
             serial_test::async_serial_core_with_return("", || async {
                 { Ok(()) }
@@ -221,4 +228,19 @@ fn test_serial_async_return() {
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
+}
+
+#[test]
+#[should_panic = "proc-macro-error API cannot be used outside of"]
+fn test_serial_async_before_wrapper() {
+    let attrs = proc_macro2::TokenStream::new();
+    let input = quote! {
+        #[serial]
+        #[actix_rt::test]
+        async fn test_async_serial_no_arg_actix() {}
+    };
+
+    // This will panic because we're trying to call into proc-macro-error outside of a proc macro
+    // Kinda a side-effect of proc macros being hard to test TBH, and so we can't actually check for the proper error message
+    serial_core(attrs.into(), input.into());
 }

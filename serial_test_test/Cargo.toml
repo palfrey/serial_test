@@ -11,3 +11,4 @@ serial_test = { path="../serial_test" }
 lazy_static = "^1.2"
 env_logger = ">= 0.7, <0.9"
 tokio = { version = "0.2", features = ["macros", "rt-threaded"] } # Can't upgrade or we break 1.39
+actix-rt = { version = "1.0", default_features = false }

@@ -90,6 +90,12 @@ mod tests {
         init();
     }
 
+    #[actix_rt::test]
+    #[serial]
+    async fn test_async_serial_no_arg_actix() {
+        init();
+    }
+
     #[tokio::test]
     #[serial]
     async fn test_async_can_return() -> Result<(), ()> {
