@@ -114,18 +114,14 @@ fn serial_core(
                 #(#attrs)
                 *
                 async fn #name () -> #ret {
-                    serial_test::async_serial_core_with_return(#key, || async {
-                        #block
-                    }).await;
+                    serial_test::async_serial_core_with_return(#key, || async #block ).await;
                 }
             },
             None => quote! {
                 #(#attrs)
                 *
                 fn #name () -> #ret {
-                    serial_test::serial_core_with_return(#key, || {
-                        #block
-                    })
+                    serial_test::serial_core_with_return(#key, || #block )
                 }
             },
         }
@@ -135,18 +131,14 @@ fn serial_core(
                 #(#attrs)
                 *
                 async fn #name () {
-                    serial_test::async_serial_core(#key, || async {
-                        #block
-                    }).await;
+                    serial_test::async_serial_core(#key, || async #block ).await;
                 }
             },
             None => quote! {
                 #(#attrs)
                 *
                 fn #name () {
-                    serial_test::serial_core(#key, || {
-                        #block
-                    });
+                    serial_test::serial_core(#key, || #block );
                 }
             },
         }
@@ -164,9 +156,7 @@ fn test_serial() {
     let compare = quote! {
         #[test]
         fn foo () {
-            serial_test::serial_core("", || {
-                {}
-            });
+            serial_test::serial_core("", || {} );
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -188,9 +178,7 @@ fn test_stripped_attributes() {
         #[test]
         #[something_else]
         fn foo () {
-            serial_test::serial_core("", || {
-                {}
-            });
+            serial_test::serial_core("", || {} );
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -205,9 +193,7 @@ fn test_serial_async() {
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
         async fn foo () {
-            serial_test::async_serial_core("", || async {
-                {}
-            }).await;
+            serial_test::async_serial_core("", || async {} ).await;
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -222,9 +208,7 @@ fn test_serial_async_return() {
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
         async fn foo () -> Result<(), ()> {
-            serial_test::async_serial_core_with_return("", || async {
-                { Ok(()) }
-            }).await;
+            serial_test::async_serial_core_with_return("", || async { Ok(()) } ).await;
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
