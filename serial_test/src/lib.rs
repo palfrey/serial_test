@@ -1,3 +1,5 @@
+#![allow(unknown_lints)]
+#![allow(must_not_suspend)]
 //! # serial_test
 //! `serial_test` allows for the creation of serialised Rust tests using the [serial](attr.serial.html) attribute
 //! e.g.
