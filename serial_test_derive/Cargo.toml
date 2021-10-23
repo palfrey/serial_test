@@ -20,3 +20,4 @@ proc-macro-error = { version = "1" }
 
 [dev-dependencies]
 env_logger = ">= 0.7, <0.9"
+trybuild = "1"
