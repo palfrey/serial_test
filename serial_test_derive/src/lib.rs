@@ -214,6 +214,7 @@ fn test_serial_async_return() {
     assert_eq!(format!("{}", compare), format!("{}", stream));
 }
 
+#[rustversion::since(1.54)] // 1.54 needed for https://github.com/rust-lang/rust/commit/9daf546b77dbeab7754a80d7336cd8d00c6746e4 change in note message
 #[test]
 fn test_serial_async_before_wrapper() {
     let t = trybuild::TestCases::new();
