@@ -17,6 +17,8 @@ quote = "1.0"
 syn = { version="1.0", features=["full"] }
 proc-macro2 = "1.0"
 proc-macro-error = { version = "1" }
+rustversion = "1.0"
 
 [dev-dependencies]
 env_logger = ">= 0.7, <0.9"
+trybuild = "1"

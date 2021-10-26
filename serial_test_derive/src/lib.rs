@@ -214,17 +214,10 @@ fn test_serial_async_return() {
     assert_eq!(format!("{}", compare), format!("{}", stream));
 }
 
+// 1.54 needed for https://github.com/rust-lang/rust/commit/9daf546b77dbeab7754a80d7336cd8d00c6746e4 change in note message
+#[rustversion::since(1.54)]
 #[test]
-#[should_panic = "proc-macro-error API cannot be used outside of"]
 fn test_serial_async_before_wrapper() {
-    let attrs = proc_macro2::TokenStream::new();
-    let input = quote! {
-        #[serial]
-        #[actix_rt::test]
-        async fn test_async_serial_no_arg_actix() {}
-    };
-
-    // This will panic because we're trying to call into proc-macro-error outside of a proc macro
-    // Kinda a side-effect of proc macros being hard to test TBH, and so we can't actually check for the proper error message
-    serial_core(attrs.into(), input.into());
+    let t = trybuild::TestCases::new();
+    t.compile_fail("tests/broken/test_serial_async_before_wrapper.rs");
 }
