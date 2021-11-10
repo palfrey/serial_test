@@ -29,6 +29,8 @@ async fn test_serial_another() {
 }
 ```
 Multiple tests with the `serial` attribute are guaranteed to be executed in serial. Ordering of the tests is not guaranteed however.
+Note that if you're using an async test reactor attribute (e.g. `tokio::test` or `actix_rt::test`) then they should be listed *before*
+`serial`, otherwise we don't get an async function and things break. There's now an error for this case to improve debugging.
 
 ## Usage
 We require at least Rust 1.39 for [async/await](https://blog.rust-lang.org/2019/11/07/Async-await-stable.html) support

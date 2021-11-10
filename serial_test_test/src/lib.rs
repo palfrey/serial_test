@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use std::sync::atomic::AtomicUsize;
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
@@ -49,7 +49,6 @@ pub fn test_fn(count: usize) {
     println!("End {}", count);
     assert_eq!(LOCK.load(Ordering::Relaxed), count);
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -113,6 +112,12 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_async_serial_no_arg() {
+        init();
+    }
+
+    #[actix_rt::test]
+    #[serial]
+    async fn test_async_serial_no_arg_actix() {
         init();
     }
 

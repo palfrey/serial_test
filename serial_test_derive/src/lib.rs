@@ -5,6 +5,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
+use proc_macro_error::{abort_call_site, proc_macro_error};
 use quote::quote;
 use std::ops::Deref;
 
@@ -54,6 +55,7 @@ use std::ops::Deref;
 /// `test_serial_one` and `test_serial_another` will be executed in serial, as will `test_serial_third` and `test_serial_fourth`
 /// but neither sequence will be blocked by the other
 #[proc_macro_attribute]
+#[proc_macro_error]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     serial_core(attr.into(), input.into()).into()
 }
@@ -90,6 +92,15 @@ fn serial_core(
         .filter(|at| {
             if let Ok(m) = at.parse_meta() {
                 let path = m.path();
+                if asyncness.is_some()
+                    && path.segments.len() == 2
+                    && path.segments[1].ident == "test"
+                {
+                    // We assume that any 2-part attribute with the second part as "test" on an async function
+                    // is the "do this test with reactor" wrapper. This is true for actix, tokio and async_std.
+                    abort_call_site!("Found async test attribute after serial, which will break");
+                }
+
                 // we skip ignore/should_panic because the test framework already deals with it
                 !(path.is_ident("ignore") || path.is_ident("should_panic"))
             } else {
@@ -103,18 +114,14 @@ fn serial_core(
                 #(#attrs)
                 *
                 async fn #name () -> #ret {
-                    serial_test::async_serial_core_with_return(#key, || async {
-                        #block
-                    }).await;
+                    serial_test::async_serial_core_with_return(#key, || async #block ).await;
                 }
             },
             None => quote! {
                 #(#attrs)
                 *
                 fn #name () -> #ret {
-                    serial_test::serial_core_with_return(#key, || {
-                        #block
-                    })
+                    serial_test::serial_core_with_return(#key, || #block )
                 }
             },
         }
@@ -124,18 +131,14 @@ fn serial_core(
                 #(#attrs)
                 *
                 async fn #name () {
-                    serial_test::async_serial_core(#key, || async {
-                        #block
-                    }).await;
+                    serial_test::async_serial_core(#key, || async #block ).await;
                 }
             },
             None => quote! {
                 #(#attrs)
                 *
                 fn #name () {
-                    serial_test::serial_core(#key, || {
-                        #block
-                    });
+                    serial_test::serial_core(#key, || #block );
                 }
             },
         }
@@ -153,9 +156,7 @@ fn test_serial() {
     let compare = quote! {
         #[test]
         fn foo () {
-            serial_test::serial_core("", || {
-                {}
-            });
+            serial_test::serial_core("", || {} );
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -177,9 +178,7 @@ fn test_stripped_attributes() {
         #[test]
         #[something_else]
         fn foo () {
-            serial_test::serial_core("", || {
-                {}
-            });
+            serial_test::serial_core("", || {} );
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -189,16 +188,12 @@ fn test_stripped_attributes() {
 fn test_serial_async() {
     let attrs = proc_macro2::TokenStream::new();
     let input = quote! {
-        #[tokio::test]
         async fn foo() {}
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        #[tokio::test]
         async fn foo () {
-            serial_test::async_serial_core("", || async {
-                {}
-            }).await;
+            serial_test::async_serial_core("", || async {} ).await;
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -208,17 +203,21 @@ fn test_serial_async() {
 fn test_serial_async_return() {
     let attrs = proc_macro2::TokenStream::new();
     let input = quote! {
-        #[tokio::test]
         async fn foo() -> Result<(), ()> { Ok(()) }
     };
     let stream = serial_core(attrs.into(), input);
     let compare = quote! {
-        #[tokio::test]
         async fn foo () -> Result<(), ()> {
-            serial_test::async_serial_core_with_return("", || async {
-                { Ok(()) }
-            }).await;
+            serial_test::async_serial_core_with_return("", || async { Ok(()) } ).await;
         }
     };
     assert_eq!(format!("{}", compare), format!("{}", stream));
+}
+
+// 1.54 needed for https://github.com/rust-lang/rust/commit/9daf546b77dbeab7754a80d7336cd8d00c6746e4 change in note message
+#[rustversion::since(1.54)]
+#[test]
+fn test_serial_async_before_wrapper() {
+    let t = trybuild::TestCases::new();
+    t.compile_fail("tests/broken/test_serial_async_before_wrapper.rs");
 }
