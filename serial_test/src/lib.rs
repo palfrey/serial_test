@@ -21,7 +21,8 @@ mod code_lock;
 mod file_lock;
 
 pub use code_lock::{
-    async_serial_core, async_serial_core_with_return, serial_core, serial_core_with_return,
+    local_async_serial_core, local_async_serial_core_with_return, local_serial_core,
+    local_serial_core_with_return,
 };
 
 pub use file_lock::{

@@ -26,7 +26,10 @@ fn check_new_key(name: &str) {
 }
 
 #[doc(hidden)]
-pub fn serial_core_with_return<E>(name: &str, function: fn() -> Result<(), E>) -> Result<(), E> {
+pub fn local_serial_core_with_return<E>(
+    name: &str,
+    function: fn() -> Result<(), E>,
+) -> Result<(), E> {
     check_new_key(name);
 
     let unlock = LOCKS.read().unwrap();
@@ -36,7 +39,7 @@ pub fn serial_core_with_return<E>(name: &str, function: fn() -> Result<(), E>) -
 }
 
 #[doc(hidden)]
-pub fn serial_core(name: &str, function: fn()) {
+pub fn local_serial_core(name: &str, function: fn()) {
     check_new_key(name);
 
     let unlock = LOCKS.read().unwrap();
@@ -46,7 +49,7 @@ pub fn serial_core(name: &str, function: fn()) {
 }
 
 #[doc(hidden)]
-pub async fn async_serial_core_with_return<E>(
+pub async fn local_async_serial_core_with_return<E>(
     name: &str,
     fut: impl std::future::Future<Output = Result<(), E>>,
 ) -> Result<(), E> {
@@ -59,7 +62,7 @@ pub async fn async_serial_core_with_return<E>(
 }
 
 #[doc(hidden)]
-pub async fn async_serial_core(name: &str, fut: impl std::future::Future<Output = ()>) {
+pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<Output = ()>) {
     check_new_key(name);
 
     let unlock = LOCKS.read().unwrap();

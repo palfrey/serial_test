@@ -6,7 +6,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use proc_macro_error::{abort_call_site, proc_macro_error};
-use quote::quote;
+use quote::{format_ident, quote};
 use std::ops::Deref;
 
 /// Allows for the creation of serialised Rust tests
@@ -57,10 +57,16 @@ use std::ops::Deref;
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
-    serial_core(attr.into(), input.into()).into()
+    local_serial_core(attr.into(), input.into()).into()
 }
 
-fn serial_core(
+#[proc_macro_attribute]
+#[proc_macro_error]
+pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
+    fs_serial_core(attr.into(), input.into()).into()
+}
+
+fn local_serial_core(
     attr: proc_macro2::TokenStream,
     input: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
@@ -78,6 +84,49 @@ fn serial_core(
             panic!("Expected either 0 or 1 arguments, got {}: {:?}", n, attrs);
         }
     };
+    serial_setup(input, &vec![key], "local")
+}
+
+fn fs_serial_core(
+    attr: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let attrs = attr.into_iter().collect::<Vec<TokenTree>>();
+    match attrs.len() {
+        0 => serial_setup(input, &vec!["".to_string(), "".to_string()], "fs"),
+        1 => {
+            if let TokenTree::Ident(id) = &attrs[0] {
+                serial_setup(input, &vec![id.to_string(), "".to_string()], "fs")
+            } else {
+                panic!("Expected a single name as argument, got {:?}", attrs);
+            }
+        }
+        2 => {
+            let key;
+            let path;
+            if let TokenTree::Ident(id) = &attrs[0] {
+                key = id.to_string()
+            } else {
+                panic!("Expected name as first argument, got {:?}", attrs);
+            }
+            if let TokenTree::Ident(id) = &attrs[1] {
+                path = id.to_string()
+            } else {
+                panic!("Expected path as second argument, got {:?}", attrs);
+            }
+            serial_setup(input, &vec![key, path], "fs")
+        }
+        n => {
+            panic!("Expected either 0 or 1 arguments, got {}: {:?}", n, attrs);
+        }
+    }
+}
+
+fn serial_setup<'a>(
+    input: proc_macro2::TokenStream,
+    args: &[String],
+    prefix: &str,
+) -> proc_macro2::TokenStream {
     let ast: syn::ItemFn = syn::parse2(input).unwrap();
     let asyncness = ast.sig.asyncness;
     let name = ast.sig.ident;
@@ -110,114 +159,175 @@ fn serial_core(
         .collect();
     if let Some(ret) = return_type {
         match asyncness {
-            Some(_) => quote! {
-                #(#attrs)
-                *
-                async fn #name () -> #ret {
-                    serial_test::async_serial_core_with_return(#key, || async #block ).await;
+            Some(_) => {
+                let fnname = format_ident!("{}_async_serial_core_with_return", prefix);
+                quote! {
+                    #(#attrs)
+                    *
+                    async fn #name () -> #ret {
+                        serial_test::#fnname(#(#args ),*, || async #block ).await;
+                    }
                 }
-            },
-            None => quote! {
-                #(#attrs)
-                *
-                fn #name () -> #ret {
-                    serial_test::serial_core_with_return(#key, || #block )
+            }
+            None => {
+                let fnname = format_ident!("{}_serial_core_with_return", prefix);
+                quote! {
+                    #(#attrs)
+                    *
+                    fn #name () -> #ret {
+                        serial_test::#fnname(#(#args ),*, || #block )
+                    }
                 }
-            },
+            }
         }
     } else {
         match asyncness {
-            Some(_) => quote! {
-                #(#attrs)
-                *
-                async fn #name () {
-                    serial_test::async_serial_core(#key, || async #block ).await;
+            Some(_) => {
+                let fnname = format_ident!("{}_async_serial_core", prefix);
+                quote! {
+                    #(#attrs)
+                    *
+                    async fn #name () {
+                        serial_test::#fnname(#(#args ),*, || async #block ).await;
+                    }
                 }
-            },
-            None => quote! {
-                #(#attrs)
-                *
-                fn #name () {
-                    serial_test::serial_core(#key, || #block );
+            }
+            None => {
+                let fnname = format_ident!("{}_serial_core", prefix);
+                quote! {
+                    #(#attrs)
+                    *
+                    fn #name () {
+                        serial_test::#fnname(#(#args ),*, || #block );
+                    }
                 }
-            },
+            }
         }
     }
 }
 
-#[test]
-fn test_serial() {
-    let attrs = proc_macro2::TokenStream::new();
-    let input = quote! {
-        #[test]
-        fn foo() {}
-    };
-    let stream = serial_core(attrs.into(), input);
-    let compare = quote! {
-        #[test]
-        fn foo () {
-            serial_test::serial_core("", || {} );
-        }
-    };
-    assert_eq!(format!("{}", compare), format!("{}", stream));
-}
+#[cfg(test)]
+mod tests {
+    use super::{format_ident, fs_serial_core, local_serial_core, quote, TokenTree};
+    use std::iter::FromIterator;
 
-#[test]
-fn test_stripped_attributes() {
-    let _ = env_logger::builder().is_test(true).try_init();
-    let attrs = proc_macro2::TokenStream::new();
-    let input = quote! {
-        #[test]
-        #[ignore]
-        #[should_panic(expected = "Testing panic")]
-        #[something_else]
-        fn foo() {}
-    };
-    let stream = serial_core(attrs.into(), input);
-    let compare = quote! {
-        #[test]
-        #[something_else]
-        fn foo () {
-            serial_test::serial_core("", || {} );
-        }
-    };
-    assert_eq!(format!("{}", compare), format!("{}", stream));
-}
+    #[test]
+    fn test_serial() {
+        let attrs = proc_macro2::TokenStream::new();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = local_serial_core(attrs.into(), input);
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                serial_test::local_serial_core("", || {} );
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
 
-#[test]
-fn test_serial_async() {
-    let attrs = proc_macro2::TokenStream::new();
-    let input = quote! {
-        async fn foo() {}
-    };
-    let stream = serial_core(attrs.into(), input);
-    let compare = quote! {
-        async fn foo () {
-            serial_test::async_serial_core("", || async {} ).await;
-        }
-    };
-    assert_eq!(format!("{}", compare), format!("{}", stream));
-}
+    #[test]
+    fn test_stripped_attributes() {
+        let _ = env_logger::builder().is_test(true).try_init();
+        let attrs = proc_macro2::TokenStream::new();
+        let input = quote! {
+            #[test]
+            #[ignore]
+            #[should_panic(expected = "Testing panic")]
+            #[something_else]
+            fn foo() {}
+        };
+        let stream = local_serial_core(attrs.into(), input);
+        let compare = quote! {
+            #[test]
+            #[something_else]
+            fn foo () {
+                serial_test::local_serial_core("", || {} );
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
 
-#[test]
-fn test_serial_async_return() {
-    let attrs = proc_macro2::TokenStream::new();
-    let input = quote! {
-        async fn foo() -> Result<(), ()> { Ok(()) }
-    };
-    let stream = serial_core(attrs.into(), input);
-    let compare = quote! {
-        async fn foo () -> Result<(), ()> {
-            serial_test::async_serial_core_with_return("", || async { Ok(()) } ).await;
-        }
-    };
-    assert_eq!(format!("{}", compare), format!("{}", stream));
-}
+    #[test]
+    fn test_serial_async() {
+        let attrs = proc_macro2::TokenStream::new();
+        let input = quote! {
+            async fn foo() {}
+        };
+        let stream = local_serial_core(attrs.into(), input);
+        let compare = quote! {
+            async fn foo () {
+                serial_test::local_async_serial_core("", || async {} ).await;
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
 
-// 1.54 needed for https://github.com/rust-lang/rust/commit/9daf546b77dbeab7754a80d7336cd8d00c6746e4 change in note message
-#[rustversion::since(1.54)]
-#[test]
-fn test_serial_async_before_wrapper() {
-    let t = trybuild::TestCases::new();
-    t.compile_fail("tests/broken/test_serial_async_before_wrapper.rs");
+    #[test]
+    fn test_serial_async_return() {
+        let attrs = proc_macro2::TokenStream::new();
+        let input = quote! {
+            async fn foo() -> Result<(), ()> { Ok(()) }
+        };
+        let stream = local_serial_core(attrs.into(), input);
+        let compare = quote! {
+            async fn foo () -> Result<(), ()> {
+                serial_test::local_async_serial_core_with_return("", || async { Ok(()) } ).await;
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
+
+    // 1.54 needed for https://github.com/rust-lang/rust/commit/9daf546b77dbeab7754a80d7336cd8d00c6746e4 change in note message
+    #[rustversion::since(1.54)]
+    #[test]
+    fn test_serial_async_before_wrapper() {
+        let t = trybuild::TestCases::new();
+        t.compile_fail("tests/broken/test_serial_async_before_wrapper.rs");
+    }
+
+    #[test]
+    fn test_file_serial() {
+        let attrs = vec![TokenTree::Ident(format_ident!("foo"))];
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = fs_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                serial_test::fs_serial_core("foo", "", || {} );
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
+
+    #[test]
+    fn test_file_serial_with_path() {
+        let attrs = vec![
+            TokenTree::Ident(format_ident!("foo")),
+            TokenTree::Ident(format_ident!("bar_path")),
+        ];
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = fs_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                serial_test::fs_serial_core("foo", "bar_path", || {} );
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
 }
