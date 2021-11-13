@@ -39,6 +39,7 @@ jobs:
           RUSTFLAGS: -Dwarnings
         with:
           command: clippy
+        continue-on-error: ${{ matrix.rust == 'nightly' || matrix.rust == 'beta' }}
       - name: Build and test
         uses: actions-rs/cargo@v1.0.3
         with:
