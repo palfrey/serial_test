@@ -61,8 +61,9 @@ pub fn fs_test_fn(count: usize) {
     fs::write(pathbuf.as_path(), count.to_ne_bytes()).unwrap();
     thread::sleep(Duration::from_millis(1000 * (count as u64)));
     println!("End {}", count);
+
     let loaded = fs::read(pathbuf.as_path())
-        .and_then(|bytes| Ok(usize::from_ne_bytes(bytes.try_into().unwrap())))
+        .map(|bytes| usize::from_ne_bytes(bytes.try_into().unwrap()))
         .unwrap();
     assert_eq!(loaded, count);
 }

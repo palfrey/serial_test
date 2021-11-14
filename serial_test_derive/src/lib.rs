@@ -125,13 +125,13 @@ fn fs_serial_core(
     serial_setup(input, args, "fs")
 }
 
-fn serial_setup<'a, T: ?Sized>(
+fn serial_setup<T>(
     input: proc_macro2::TokenStream,
     args: Vec<Box<T>>,
     prefix: &str,
 ) -> proc_macro2::TokenStream
 where
-    T: quote::ToTokens,
+    T: quote::ToTokens + ?Sized,
 {
     let ast: syn::ItemFn = syn::parse2(input).unwrap();
     let asyncness = ast.sig.asyncness;
