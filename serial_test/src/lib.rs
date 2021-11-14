@@ -1,5 +1,5 @@
 //! # serial_test
-//! `serial_test` allows for the creation of serialised Rust tests using the [serial](attr.serial.html) attribute
+//! `serial_test` allows for the creation of serialised Rust tests using the [serial](macro@serial) attribute
 //! e.g.
 //! ````
 //! #[test]
@@ -14,8 +14,20 @@
 //!   // Do things
 //! }
 //! ````
-//! Multiple tests with the [serial](attr.serial.html) attribute are guaranteed to be executed in serial. Ordering
+//! Multiple tests with the [serial](macro@serial) attribute are guaranteed to be executed in serial. Ordering
 //! of the tests is not guaranteed however.
+//!
+//! For cases like doctests and integration tests where the tests are run as separate processes, we also support
+//! [file_serial](macro@file_serial), with similar properties but based off file locking. Note that there are no
+//! guarantees about one test with [serial](macro@serial) and another with [file_serial](macro@file_serial)
+//! as they lock using different methods.
+//! ````
+//! #[test]
+//! #[file_serial]
+//! fn test_serial_three() {
+//!   // Do things
+//! }
+//! ````
 
 mod code_lock;
 #[cfg(feature = "file_locks")]

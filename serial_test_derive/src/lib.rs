@@ -23,9 +23,9 @@ use std::ops::Deref;
 ///   // Do things
 /// }
 /// ````
-/// Multiple tests with the [serial](attr.serial.html) attribute are guaranteed to be executed in serial. Ordering
+/// Multiple tests with the [serial](macro@serial) attribute are guaranteed to be executed in serial. Ordering
 /// of the tests is not guaranteed however. If you want different subsets of tests to be serialised with each
-/// other, but not depend on other subsets, you can add an argument to [serial](attr.serial.html), and all calls
+/// other, but not depend on other subsets, you can add an argument to [serial](macro@serial), and all calls
 /// with identical arguments will be called in serial. e.g.
 /// ````
 /// #[test]
@@ -54,12 +54,49 @@ use std::ops::Deref;
 /// ````
 /// `test_serial_one` and `test_serial_another` will be executed in serial, as will `test_serial_third` and `test_serial_fourth`
 /// but neither sequence will be blocked by the other
+///
+/// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) is supported
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     local_serial_core(attr.into(), input.into()).into()
 }
 
+/// Allows for the creation of file-serialised Rust tests
+/// ````
+/// #[test]
+/// #[file_serial]
+/// fn test_serial_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[file_serial]
+/// fn test_serial_another() {
+///   // Do things
+/// }
+/// ````
+///
+/// Multiple tests with the [file_serial](macro@file_serial) attribute are guaranteed to run in serial, as per the [serial](macro@serial)
+/// attribute. Note that there are no guarantees about one test with [serial](macro@serial) and another with [file_serial](macro@file_serial)
+/// as they lock using different methods, and [file_serial](macro@file_serial) does not support nested serialised tests, but otherwise acts
+/// like [serial](macro@serial).
+///
+/// It also supports an optional `path` arg e.g
+/// ````
+/// #[test]
+/// #[file_serial(key, "/tmp/foo")]
+/// fn test_serial_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[file_serial(key, "/tmp/foo")]
+/// fn test_serial_another() {
+///   // Do things
+/// }
+/// ````
+/// Note that in this case you need to specify the `name` arg as well (as per [serial](macro@serial)). The path defaults to a reasonable temp directory for the OS if not specified.
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
