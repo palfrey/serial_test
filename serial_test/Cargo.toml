@@ -19,3 +19,6 @@ fslock = {version = "0.2", optional = true}
 [features]
 default = []
 file_locks = ["fslock"]
+
+[package.metadata.docs.rs]
+all-features = true
