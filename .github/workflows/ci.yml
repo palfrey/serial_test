@@ -19,6 +19,9 @@ jobs:
           - beta
           - nightly
           - 1.39.0
+        features:
+          - default
+          - file_locks
     steps:
       - uses: actions/checkout@v2.3.4
       - uses: actions-rs/toolchain@v1.0.7
@@ -33,17 +36,20 @@ jobs:
         with:
           command: fmt
           args: -- --check
+        if: ${{ matrix.features == 'default' }}
       - name: Clippy
         uses: actions-rs/cargo@v1.0.3
         env:
           RUSTFLAGS: -Dwarnings
         with:
           command: clippy
+        if: ${{ matrix.features == 'default' }}
         continue-on-error: ${{ matrix.rust == 'nightly' || matrix.rust == 'beta' }}
       - name: Build and test
         uses: actions-rs/cargo@v1.0.3
         with:
           command: test
+          args: --features ${{ matrix.features }}
 
   multi-os-testing:
     name: Test suite
@@ -64,7 +70,8 @@ jobs:
       - name: Build and test
         uses: actions-rs/cargo@v1.0.3
         with:
-          command: test          
+          command: test
+          args: --all-features
 
   minimal-versions:
     name: minimal versions check

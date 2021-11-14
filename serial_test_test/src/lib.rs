@@ -84,9 +84,9 @@ mod tests {
     use serial_test::serial;
 
     #[cfg(feature = "file_locks")]
-    use serial_test::file_serial;
-    #[cfg(feature = "file_locks")]
     use super::fs_test_fn;
+    #[cfg(feature = "file_locks")]
+    use serial_test::file_serial;
 
     #[test]
     #[serial]
