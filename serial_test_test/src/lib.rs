@@ -63,7 +63,7 @@ pub fn fs_test_fn(count: usize) {
     println!("End {}", count);
 
     let loaded = fs::read(pathbuf.as_path())
-        .map(|bytes| usize::from_ne_bytes(bytes.try_into().unwrap()))
+        .map(|bytes| usize::from_ne_bytes(bytes.as_slice().try_into().unwrap()))
         .unwrap();
     assert_eq!(loaded, count);
 }
