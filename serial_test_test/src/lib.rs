@@ -184,7 +184,8 @@ mod tests {
 
     #[cfg(feature = "file_locks")]
     #[test]
-    #[file_serial(test, "/tmp/test")]
+    #[cfg_attr(windows, file_serial(test, "c:\\windows\\temp"))]
+    #[cfg_attr(not(windows), file_serial(test, "/tmp/test"))]
     fn test_file_with_path() {}
 
     #[test]
