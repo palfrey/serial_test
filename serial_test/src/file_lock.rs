@@ -39,7 +39,7 @@ fn do_lock(path: &str) -> Lock {
 
 fn path_for_name(name: &str) -> String {
     let mut pathbuf = env::temp_dir();
-    pathbuf.push(format!("serial-core-{}", name));
+    pathbuf.push(format!("serial-test-{}", name));
     pathbuf.into_os_string().into_string().unwrap()
 }
 

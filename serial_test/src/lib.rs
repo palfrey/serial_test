@@ -30,6 +30,6 @@ pub use file_lock::{
     fs_serial_core_with_return,
 };
 
-// Re-export #[serial].
+// Re-export #[serial/file_serial].
 #[allow(unused_imports)]
-pub use serial_test_derive::serial;
+pub use serial_test_derive::{file_serial, serial};

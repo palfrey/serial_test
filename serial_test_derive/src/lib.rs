@@ -84,7 +84,7 @@ fn local_serial_core(
             panic!("Expected either 0 or 1 arguments, got {}: {:?}", n, attrs);
         }
     };
-    serial_setup(input, &vec![key], "local")
+    serial_setup(input, vec![Box::new(key)], "local")
 }
 
 fn fs_serial_core(
@@ -92,41 +92,47 @@ fn fs_serial_core(
     input: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     let attrs = attr.into_iter().collect::<Vec<TokenTree>>();
+    let mut args: Vec<Box<dyn quote::ToTokens>> = Vec::new();
     match attrs.len() {
-        0 => serial_setup(input, &vec!["".to_string(), "".to_string()], "fs"),
+        0 => {
+            args.push(Box::new("".to_string()));
+            args.push(Box::new(format_ident!("None")));
+        }
         1 => {
             if let TokenTree::Ident(id) = &attrs[0] {
-                serial_setup(input, &vec![id.to_string(), "".to_string()], "fs")
+                args.push(Box::new(id.to_string()));
+                args.push(Box::new(format_ident!("None")));
             } else {
                 panic!("Expected a single name as argument, got {:?}", attrs);
             }
         }
         2 => {
-            let key;
-            let path;
             if let TokenTree::Ident(id) = &attrs[0] {
-                key = id.to_string()
+                args.push(Box::new(id.to_string()))
             } else {
                 panic!("Expected name as first argument, got {:?}", attrs);
             }
             if let TokenTree::Ident(id) = &attrs[1] {
-                path = id.to_string()
+                args.push(Box::new(id.to_string()))
             } else {
                 panic!("Expected path as second argument, got {:?}", attrs);
             }
-            serial_setup(input, &vec![key, path], "fs")
         }
         n => {
             panic!("Expected either 0 or 1 arguments, got {}: {:?}", n, attrs);
         }
     }
+    serial_setup(input, args, "fs")
 }
 
-fn serial_setup<'a>(
+fn serial_setup<'a, T: ?Sized>(
     input: proc_macro2::TokenStream,
-    args: &[String],
+    args: Vec<Box<T>>,
     prefix: &str,
-) -> proc_macro2::TokenStream {
+) -> proc_macro2::TokenStream
+where
+    T: quote::ToTokens,
+{
     let ast: syn::ItemFn = syn::parse2(input).unwrap();
     let asyncness = ast.sig.asyncness;
     let name = ast.sig.ident;
@@ -302,7 +308,7 @@ mod tests {
         let compare = quote! {
             #[test]
             fn foo () {
-                serial_test::fs_serial_core("foo", "", || {} );
+                serial_test::fs_serial_core("foo", None, || {} );
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));

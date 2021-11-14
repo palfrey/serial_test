@@ -1,4 +1,7 @@
 use lazy_static::lazy_static;
+use std::convert::TryInto;
+use std::env;
+use std::fs;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -17,28 +20,28 @@ fn init() {
 /// ```
 /// #[macro_use] extern crate serial_test;
 /// extern crate serial_test_test;
-/// use serial_test_test::{test_fn};
-/// // #[serial_test::serial]
+/// use serial_test_test::{fs_test_fn};
+/// #[serial_test::file_serial]
 /// fn main() {
-/// test_fn(4);
+/// fs_test_fn(1);
 /// }
 /// ```
 /// ```
 /// #[macro_use] extern crate serial_test;
 /// extern crate serial_test_test;
-/// use serial_test_test::{test_fn};
-/// // #[serial_test::serial]
+/// use serial_test_test::{fs_test_fn};
+/// #[serial_test::file_serial]
 /// fn main() {
-/// test_fn(5);
+/// fs_test_fn(2);
 /// }
 /// ```
 /// ```
 /// #[macro_use] extern crate serial_test;
 /// extern crate serial_test_test;
-/// use serial_test_test::{test_fn};
-/// // #[serial_test::serial]
+/// use serial_test_test::{fs_test_fn};
+/// #[serial_test::file_serial]
 /// fn main() {
-/// test_fn(6);
+/// fs_test_fn(3);
 /// }
 /// ```
 pub fn test_fn(count: usize) {
@@ -50,10 +53,24 @@ pub fn test_fn(count: usize) {
     assert_eq!(LOCK.load(Ordering::Relaxed), count);
 }
 
+pub fn fs_test_fn(count: usize) {
+    init();
+    println!("Start {}", count);
+    let mut pathbuf = env::temp_dir();
+    pathbuf.push("serial-test-test");
+    fs::write(pathbuf.as_path(), count.to_ne_bytes()).unwrap();
+    thread::sleep(Duration::from_millis(1000 * (count as u64)));
+    println!("End {}", count);
+    let loaded = fs::read(pathbuf.as_path())
+        .and_then(|bytes| Ok(usize::from_ne_bytes(bytes.try_into().unwrap())))
+        .unwrap();
+    assert_eq!(loaded, count);
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{init, test_fn};
-    use serial_test::serial;
+    use super::{fs_test_fn, init, test_fn};
+    use serial_test::{file_serial, serial};
 
     #[test]
     #[serial]
@@ -126,5 +143,11 @@ mod tests {
     async fn test_async_can_return() -> Result<(), ()> {
         init();
         Ok(())
+    }
+
+    #[test]
+    #[file_serial]
+    fn test_file_1() {
+        fs_test_fn(1);
     }
 }
