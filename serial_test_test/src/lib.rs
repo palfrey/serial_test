@@ -3,28 +3,37 @@
 //! #[macro_use] extern crate serial_test;
 //! extern crate serial_test_test;
 //! use serial_test_test::{fs_test_fn};
+//! #[cfg(feature = "file_locks")]
 //! #[serial_test::file_serial]
 //! fn main() {
 //! fs_test_fn(1);
 //! }
+//! #[cfg(not(feature = "file_locks"))]
+//! fn main() {}
 //! ```
 //! ```
 //! #[macro_use] extern crate serial_test;
 //! extern crate serial_test_test;
 //! use serial_test_test::{fs_test_fn};
+//! #[cfg(feature = "file_locks")]
 //! #[serial_test::file_serial]
 //! fn main() {
 //! fs_test_fn(2);
 //! }
+//! #[cfg(not(feature = "file_locks"))]
+//! fn main() {}
 //! ```
 //! ```
 //! #[macro_use] extern crate serial_test;
 //! extern crate serial_test_test;
 //! use serial_test_test::{fs_test_fn};
+//! #[cfg(feature = "file_locks")]
 //! #[serial_test::file_serial]
 //! fn main() {
 //! fs_test_fn(3);
 //! }
+//! #[cfg(not(feature = "file_locks"))]
+//! fn main() {}
 //! ```
 
 use lazy_static::lazy_static;
@@ -71,8 +80,13 @@ pub fn fs_test_fn(count: usize) {
 
 #[cfg(test)]
 mod tests {
-    use super::{fs_test_fn, init, test_fn};
-    use serial_test::{file_serial, serial};
+    use super::{init, test_fn};
+    use serial_test::serial;
+
+    #[cfg(feature = "file_locks")]
+    use serial_test::file_serial;
+    #[cfg(feature = "file_locks")]
+    use super::fs_test_fn;
 
     #[test]
     #[serial]
@@ -147,24 +161,28 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "file_locks")]
     #[test]
     #[file_serial]
     fn test_file_1() {
         fs_test_fn(1);
     }
 
+    #[cfg(feature = "file_locks")]
     #[test]
     #[file_serial]
     fn test_file_2() {
         fs_test_fn(2);
     }
 
+    #[cfg(feature = "file_locks")]
     #[test]
     #[file_serial]
     fn test_file_3() {
         fs_test_fn(3);
     }
 
+    #[cfg(feature = "file_locks")]
     #[test]
     #[file_serial(test, "/tmp/test")]
     fn test_file_with_path() {}
