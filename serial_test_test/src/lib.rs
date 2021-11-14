@@ -1,3 +1,32 @@
+//! Not inside the cfg(test) block because of <https://github.com/rust-lang/rust/issues/45599>
+//! ```
+//! #[macro_use] extern crate serial_test;
+//! extern crate serial_test_test;
+//! use serial_test_test::{fs_test_fn};
+//! #[serial_test::file_serial]
+//! fn main() {
+//! fs_test_fn(1);
+//! }
+//! ```
+//! ```
+//! #[macro_use] extern crate serial_test;
+//! extern crate serial_test_test;
+//! use serial_test_test::{fs_test_fn};
+//! #[serial_test::file_serial]
+//! fn main() {
+//! fs_test_fn(2);
+//! }
+//! ```
+//! ```
+//! #[macro_use] extern crate serial_test;
+//! extern crate serial_test_test;
+//! use serial_test_test::{fs_test_fn};
+//! #[serial_test::file_serial]
+//! fn main() {
+//! fs_test_fn(3);
+//! }
+//! ```
+
 use lazy_static::lazy_static;
 use std::convert::TryInto;
 use std::env;
@@ -16,34 +45,6 @@ fn init() {
     let _ = env_logger::builder().is_test(true).try_init();
 }
 
-/// Not inside the cfg(test) block because of https://github.com/rust-lang/rust/issues/45599
-/// ```
-/// #[macro_use] extern crate serial_test;
-/// extern crate serial_test_test;
-/// use serial_test_test::{fs_test_fn};
-/// #[serial_test::file_serial]
-/// fn main() {
-/// fs_test_fn(1);
-/// }
-/// ```
-/// ```
-/// #[macro_use] extern crate serial_test;
-/// extern crate serial_test_test;
-/// use serial_test_test::{fs_test_fn};
-/// #[serial_test::file_serial]
-/// fn main() {
-/// fs_test_fn(2);
-/// }
-/// ```
-/// ```
-/// #[macro_use] extern crate serial_test;
-/// extern crate serial_test_test;
-/// use serial_test_test::{fs_test_fn};
-/// #[serial_test::file_serial]
-/// fn main() {
-/// fs_test_fn(3);
-/// }
-/// ```
 pub fn test_fn(count: usize) {
     init();
     println!("Start {}", count);
