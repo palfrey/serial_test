@@ -27,11 +27,13 @@ fn do_lock(path: &str) -> Lock {
         let raw_file = fs::read(path).unwrap();
         let get_pid = from_utf8(&raw_file).unwrap();
         if get_pid != pid_str {
+            println!("Locked for other pid {} != {}", get_pid, pid_str);
             lockfile.lock().unwrap();
+            println!("Got lock for {:?} (2nd path)", path);
             fs::write(path, pid_str).unwrap();
         }
     } else {
-        println!("Got lock for {:?}", path);
+        println!("Got lock for {:?} (1st path)", path);
         fs::write(path, pid_str).unwrap();
     }
     Lock {
