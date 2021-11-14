@@ -1,17 +1,14 @@
 use fslock::LockFile;
-use std::{env, fs, path::Path, process, str::from_utf8};
+use std::{env, fs, path::Path};
 
 struct Lock {
     lockfile: LockFile,
-    needs_unlock: bool,
 }
 
 impl Lock {
     fn unlock(self: &mut Lock) {
-        if self.needs_unlock {
-            self.lockfile.unlock().unwrap();
-            println!("Unlock");
-        }
+        self.lockfile.unlock().unwrap();
+        println!("Unlock");
     }
 }
 
@@ -21,25 +18,9 @@ fn do_lock(path: &str) -> Lock {
     }
     let mut lockfile = LockFile::open(path).unwrap();
     println!("Waiting on {:?}", path);
-    let pid_str = format!("{}", process::id());
-    let can_lock = lockfile.try_lock().unwrap();
-    if !can_lock {
-        let raw_file = fs::read(path).unwrap();
-        let get_pid = from_utf8(&raw_file).unwrap();
-        if get_pid != pid_str {
-            println!("Locked for other pid {} != {}", get_pid, pid_str);
-            lockfile.lock().unwrap();
-            println!("Got lock for {:?} (2nd path)", path);
-            fs::write(path, pid_str).unwrap();
-        }
-    } else {
-        println!("Got lock for {:?} (1st path)", path);
-        fs::write(path, pid_str).unwrap();
-    }
-    Lock {
-        lockfile,
-        needs_unlock: can_lock,
-    }
+    lockfile.lock().unwrap();
+    println!("Locked for {:?}", path);
+    Lock { lockfile }
 }
 
 fn path_for_name(name: &str) -> String {
@@ -101,7 +82,5 @@ pub async fn fs_async_serial_core(
 
 #[test]
 fn test_serial() {
-    fs_serial_core("test", None, || {
-        fs_serial_core("test", None, || {});
-    });
+    fs_serial_core("test", None, || {});
 }
