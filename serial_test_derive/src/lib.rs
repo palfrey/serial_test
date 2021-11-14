@@ -6,7 +6,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use proc_macro_error::{abort_call_site, proc_macro_error};
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use std::ops::Deref;
 
 /// Allows for the creation of serialised Rust tests
@@ -66,22 +66,63 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     fs_serial_core(attr.into(), input.into()).into()
 }
 
+// Based off of https://github.com/dtolnay/quote/issues/20#issuecomment-437341743
+struct QuoteOption<T>(Option<T>);
+
+impl<T: ToTokens> ToTokens for QuoteOption<T> {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        tokens.append_all(match self.0 {
+            Some(ref t) => quote! { ::std::option::Option::Some(#t) },
+            None => quote! { ::std::option::Option::None },
+        });
+    }
+}
+
+fn get_raw_args(attr: proc_macro2::TokenStream) -> Vec<String> {
+    let mut attrs = attr.into_iter().collect::<Vec<TokenTree>>();
+    let mut raw_args: Vec<String> = Vec::new();
+    while !attrs.is_empty() {
+        match attrs.remove(0) {
+            TokenTree::Ident(id) => {
+                raw_args.push(id.to_string());
+            }
+            TokenTree::Literal(literal) => {
+                let string_literal = literal.to_string();
+                if !string_literal.starts_with('\"') || !string_literal.ends_with('\"') {
+                    panic!("Expected a string literal, got '{}'", string_literal);
+                }
+                // Hacky way of getting a string without the enclosing quotes
+                raw_args.push(string_literal[1..string_literal.len() - 1].to_string());
+            }
+            x => {
+                panic!("Expected either strings or literals as args, not {}", x);
+            }
+        }
+        if !attrs.is_empty() {
+            match attrs.remove(0) {
+                TokenTree::Punct(p) if p.as_char() == ',' => {}
+                x => {
+                    panic!("Expected , between args, not {}", x);
+                }
+            }
+        }
+    }
+    raw_args
+}
+
 fn local_serial_core(
     attr: proc_macro2::TokenStream,
     input: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
-    let attrs = attr.into_iter().collect::<Vec<TokenTree>>();
-    let key = match attrs.len() {
+    let mut raw_args = get_raw_args(attr);
+    let key = match raw_args.len() {
         0 => "".to_string(),
-        1 => {
-            if let TokenTree::Ident(id) = &attrs[0] {
-                id.to_string()
-            } else {
-                panic!("Expected a single name as argument, got {:?}", attrs);
-            }
-        }
+        1 => raw_args.pop().unwrap(),
         n => {
-            panic!("Expected either 0 or 1 arguments, got {}: {:?}", n, attrs);
+            panic!(
+                "Expected either 0 or 1 arguments, got {}: {:?}",
+                n, raw_args
+            );
         }
     };
     serial_setup(input, vec![Box::new(key)], "local")
@@ -91,35 +132,26 @@ fn fs_serial_core(
     attr: proc_macro2::TokenStream,
     input: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
-    let attrs = attr.into_iter().collect::<Vec<TokenTree>>();
+    let none_ident = Box::new(format_ident!("None"));
     let mut args: Vec<Box<dyn quote::ToTokens>> = Vec::new();
-    match attrs.len() {
+    let mut raw_args = get_raw_args(attr);
+    match raw_args.len() {
         0 => {
             args.push(Box::new("".to_string()));
-            args.push(Box::new(format_ident!("None")));
+            args.push(none_ident);
         }
         1 => {
-            if let TokenTree::Ident(id) = &attrs[0] {
-                args.push(Box::new(id.to_string()));
-                args.push(Box::new(format_ident!("None")));
-            } else {
-                panic!("Expected a single name as argument, got {:?}", attrs);
-            }
+            args.push(Box::new(raw_args.pop().unwrap()));
+            args.push(none_ident);
         }
-        3 => {
-            if let TokenTree::Ident(id) = &attrs[0] {
-                args.push(Box::new(id.to_string()))
-            } else {
-                panic!("Expected name as first argument, got {:?}", attrs);
-            }
-            if let TokenTree::Ident(id) = &attrs[1] {
-                args.push(Box::new(id.to_string()))
-            } else {
-                panic!("Expected path as second argument, got {:?}", attrs);
-            }
+        2 => {
+            let key = raw_args.remove(0);
+            let path = raw_args.remove(0);
+            args.push(Box::new(key));
+            args.push(Box::new(QuoteOption(Some(path))));
         }
         n => {
-            panic!("Expected 0-2 arguments, got {}: {:?}", n, attrs);
+            panic!("Expected 0-2 arguments, got {}: {:?}", n, raw_args);
         }
     }
     serial_setup(input, args, "fs")
@@ -214,6 +246,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use proc_macro2::{Literal, Punct, Spacing};
+
     use super::{format_ident, fs_serial_core, local_serial_core, quote, TokenTree};
     use std::iter::FromIterator;
 
@@ -318,7 +352,8 @@ mod tests {
     fn test_file_serial_with_path() {
         let attrs = vec![
             TokenTree::Ident(format_ident!("foo")),
-            TokenTree::Ident(format_ident!("bar_path")),
+            TokenTree::Punct(Punct::new(',', Spacing::Alone)),
+            TokenTree::Literal(Literal::string("bar_path")),
         ];
         let input = quote! {
             #[test]
@@ -331,7 +366,7 @@ mod tests {
         let compare = quote! {
             #[test]
             fn foo () {
-                serial_test::fs_serial_core("foo", "bar_path", || {} );
+                serial_test::fs_serial_core("foo", ::std::option::Option::Some("bar_path"), || {} );
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));

@@ -1,5 +1,5 @@
 use fslock::LockFile;
-use std::{env, fs, process, str::from_utf8};
+use std::{env, fs, path::Path, process, str::from_utf8};
 
 struct Lock {
     lockfile: LockFile,
@@ -16,6 +16,9 @@ impl Lock {
 }
 
 fn do_lock(path: &str) -> Lock {
+    if !Path::new(path).exists() {
+        fs::write(path, "").unwrap_or_else(|_| panic!("Lock file path was {:?}", path))
+    }
     let mut lockfile = LockFile::open(path).unwrap();
     println!("Waiting on {:?}", path);
     let pid_str = format!("{}", process::id());

@@ -156,16 +156,21 @@ mod tests {
     #[file_serial]
     fn test_file_2() {
         fs_test_fn(2);
-    }    
+    }
 
     #[test]
     #[file_serial]
     fn test_file_3() {
         fs_test_fn(3);
-    }    
+    }
 
     #[test]
-    #[file_serial("test", "/tmp/test")]
-    fn test_file_with_path() {        
+    #[file_serial(test, "/tmp/test")]
+    fn test_file_with_path() {}
+
+    #[test]
+    #[serial(test_key)]
+    fn test_with_key() {
+        init();
     }
 }
