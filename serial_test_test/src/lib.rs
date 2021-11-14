@@ -182,10 +182,9 @@ mod tests {
         fs_test_fn(3);
     }
 
-    #[cfg(feature = "file_locks")]
+    #[cfg(all(feature = "file_locks", not(windows)))]
     #[test]
-    #[cfg_attr(windows, file_serial(test, "c:\\windows\\temp"))]
-    #[cfg_attr(not(windows), file_serial(test, "/tmp/test"))]
+    #[file_serial(test, "/tmp/test")]
     fn test_file_with_path() {}
 
     #[test]
