@@ -106,7 +106,7 @@ fn fs_serial_core(
                 panic!("Expected a single name as argument, got {:?}", attrs);
             }
         }
-        2 => {
+        3 => {
             if let TokenTree::Ident(id) = &attrs[0] {
                 args.push(Box::new(id.to_string()))
             } else {
@@ -119,7 +119,7 @@ fn fs_serial_core(
             }
         }
         n => {
-            panic!("Expected either 0 or 1 arguments, got {}: {:?}", n, attrs);
+            panic!("Expected 0-2 arguments, got {}: {:?}", n, attrs);
         }
     }
     serial_setup(input, args, "fs")

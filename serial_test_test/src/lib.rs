@@ -151,4 +151,21 @@ mod tests {
     fn test_file_1() {
         fs_test_fn(1);
     }
+
+    #[test]
+    #[file_serial]
+    fn test_file_2() {
+        fs_test_fn(2);
+    }    
+
+    #[test]
+    #[file_serial]
+    fn test_file_3() {
+        fs_test_fn(3);
+    }    
+
+    #[test]
+    #[file_serial("test", "/tmp/test")]
+    fn test_file_with_path() {        
+    }
 }
