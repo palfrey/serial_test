@@ -125,6 +125,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fslock"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31bbcaaf785e09a604b93b15b9ccb41cbf4716fa04c788748d157cb3134d717b"
+dependencies = [
+ "libc",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "fuchsia-zircon"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -499,6 +509,7 @@ dependencies = [
 name = "serial_test"
 version = "0.5.1"
 dependencies = [
+ "fslock",
  "lazy_static",
  "parking_lot",
  "serial_test_derive",

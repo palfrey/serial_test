@@ -14,3 +14,11 @@ keywords = ["sequential"]
 lazy_static = "1.2"
 parking_lot = ">= 0.10, < 0.12"
 serial_test_derive = { version = "~0.5.1", path = "../serial_test_derive" }
+fslock = {version = "0.2", optional = true}
+
+[features]
+default = []
+file_locks = ["fslock"]
+
+[package.metadata.docs.rs]
+all-features = true
