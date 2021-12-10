@@ -21,7 +21,8 @@ fn check_new_key(name: &str) {
             .write()
             .unwrap()
             .deref_mut()
-            .insert(name.to_string(), ReentrantMutex::new(()));
+            .entry(name.to_string())
+            .or_default();
     }
 }
 
