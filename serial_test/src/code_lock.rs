@@ -75,9 +75,8 @@ pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<O
 
 #[cfg(test)]
 mod tests {
-    use lazy_static::__Deref;
-
     use super::{check_new_key, LOCKS};
+    use std::ops::Deref;
     use std::{
         sync::{Arc, Barrier, RwLock},
         thread,
