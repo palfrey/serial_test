@@ -15,10 +15,16 @@ lazy_static = "1.2"
 parking_lot = ">= 0.10, < 0.12"
 serial_test_derive = { version = "~0.5.1", path = "../serial_test_derive" }
 fslock = {version = "0.2", optional = true}
+document-features = "0.2"
 
 [features]
 default = []
+
+## The file_locks feature unlocks the `file_serial` macro
 file_locks = ["fslock"]
 
+# docs.rs-specific configuration
 [package.metadata.docs.rs]
 all-features = true
+# defines the configuration attribute `docsrs`
+rustdoc-args = ["--cfg", "docsrs"]

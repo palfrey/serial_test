@@ -30,6 +30,9 @@
 //!   // Do things
 //! }
 //! ````
+//!
+//! ## Feature flags
+#![doc = document_features::document_features!()]
 
 mod code_lock;
 #[cfg(feature = "file_locks")]
