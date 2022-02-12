@@ -32,7 +32,10 @@
 //! ````
 //!
 //! ## Feature flags
-#![doc = document_features::document_features!()]
+#![cfg_attr(
+    feature = "docsrs",
+    cfg_attr(doc, doc = ::document_features::document_features!())
+)]
 
 mod code_lock;
 #[cfg(feature = "file_locks")]
