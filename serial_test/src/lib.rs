@@ -43,7 +43,7 @@ mod file_lock;
 
 pub use code_lock::{
     local_async_serial_core, local_async_serial_core_with_return, local_serial_core,
-    local_serial_core_with_return,
+    local_serial_core_with_return, set_max_wait,
 };
 
 #[cfg(feature = "file_locks")]

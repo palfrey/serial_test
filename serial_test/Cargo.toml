@@ -17,6 +17,9 @@ serial_test_derive = { version = "~0.6.0", path = "../serial_test_derive" }
 fslock = {version = "0.2", optional = true}
 document-features = {version = "0.2", optional=true}
 
+[dev-dependencies]
+itertools = "0.10"
+
 [features]
 default = []
 
