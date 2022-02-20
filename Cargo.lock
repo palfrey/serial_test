@@ -112,6 +112,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "document-features"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b01c09fd63b5136fba41aa625c7b3254f0aa0a435ff6ec4b2c9a28d496c83c88"
+
+[[package]]
 name = "env_logger"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -507,8 +513,9 @@ dependencies = [
 
 [[package]]
 name = "serial_test"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
+ "document-features",
  "fslock",
  "lazy_static",
  "parking_lot",
@@ -517,7 +524,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test_derive"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "env_logger",
  "proc-macro-error",
@@ -530,7 +537,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test_test"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "actix-rt",
  "env_logger",

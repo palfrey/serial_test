@@ -1,6 +1,8 @@
 //! # serial_test_derive
 //! Helper crate for [serial_test](../serial_test/index.html)
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
@@ -99,6 +101,7 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// Note that in this case you need to specify the `name` arg as well (as per [serial](macro@serial)). The path defaults to a reasonable temp directory for the OS if not specified.
 #[proc_macro_attribute]
 #[proc_macro_error]
+#[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     fs_serial_core(attr.into(), input.into()).into()
 }
