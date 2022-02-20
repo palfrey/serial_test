@@ -12,7 +12,7 @@ keywords = ["sequential"]
 
 [dependencies]
 lazy_static = "1.2"
-parking_lot = ">= 0.10, < 0.12"
+parking_lot = ">= 0.10, < 0.12" # Can't upgrade or we break 1.39
 serial_test_derive = { version = "~0.5.1", path = "../serial_test_derive" }
 fslock = {version = "0.2", optional = true}
 document-features = {version = "0.2", optional=true}
