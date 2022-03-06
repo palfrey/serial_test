@@ -32,6 +32,10 @@ Tests without the `serial` attribute may run at any time, including in parallel 
 an async test reactor attribute (e.g. `tokio::test` or `actix_rt::test`) then they should be listed *before* `serial`, otherwise we
 don't get an async function and things break. There's now an error for this case to improve debugging.
 
+For cases like doctests and integration tests where the tests are run as separate processes, we also support `file_serial`, with
+similar properties but based off file locking. Note that there are no guarantees about one test with `serial` and another with 
+`file_serial` as they lock using different methods.
+
 ## Usage
 We require at least Rust 1.39 for [async/await](https://blog.rust-lang.org/2019/11/07/Async-await-stable.html) support
 
