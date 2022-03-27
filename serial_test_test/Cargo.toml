@@ -2,21 +2,19 @@
 name = "serial_test_test"
 description = "External testing crate for serial_test"
 license = "MIT"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Tom Parker-Shemilt <palfrey@tevp.net>"]
 edition = "2018"
 
 [dependencies]
 serial_test = { path="../serial_test" }
 lazy_static = "^1.2"
-env_logger = ">= 0.7, <0.9"
+env_logger = "^0.9"
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["macros", "rt-threaded"] } # Can't upgrade or we break 1.39
-actix-rt = { version = "1.0", default_features = false }
-
-# futures 0.3.15 breaks 1.39
-futures-util = {version = ">=0.3, <0.3.15", default_features = false }
+tokio = { version = "^1.17", features = ["macros", "rt"] }
+actix-rt = { version = "^2.7", features = ["macros"] }
+futures-util = {version = "^0.3", default_features = false }
 
 [features]
 default = []
