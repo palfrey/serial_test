@@ -4,7 +4,7 @@
 [![Docs](https://docs.rs/serial_test/badge.svg)](https://docs.rs/serial_test/)
 [![MIT license](https://img.shields.io/crates/l/serial_test.svg)](./LICENSE)
 [![Build Status](https://github.com/palfrey/serial_test/workflows/Continuous%20integration/badge.svg?branch=main)](https://github.com/palfrey/serial_test/actions)
-[![MSRV: 1.49.0](https://flat.badgen.net/badge/MSRV/1.49.0/purple)](https://blog.rust-lang.org/2020/12/31/Rust-1.49.0.html)
+[![MSRV: 1.51.0](https://flat.badgen.net/badge/MSRV/1.51.0/purple)](https://blog.rust-lang.org/2021/03/25/Rust-1.51.0.html)
 
 `serial_test` allows for the creation of serialised Rust tests using the `serial` attribute
 e.g.
@@ -37,7 +37,7 @@ similar properties but based off file locking. Note that there are no guarantees
 `file_serial` as they lock using different methods.
 
 ## Usage
-We require at least Rust 1.49. Upgrades to this will require at least a minor version bump (while in 0.x versions) and a major version bump post-1.0.
+We require at least Rust 1.51. Upgrades to this will require at least a minor version bump (while in 0.x versions) and a major version bump post-1.0.
 
 Add to your Cargo.toml
 ```toml
