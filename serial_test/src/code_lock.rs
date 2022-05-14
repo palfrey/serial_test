@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use parking_lot::{Mutex, ReentrantMutex, ReentrantMutexGuard, RwLock};
+use parking_lot::{Mutex, ReentrantMutexGuard, RwLock};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
@@ -7,8 +7,10 @@ use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::rwlock::{Locks, MutexGuardWrapper};
+
 struct UniqueReentrantMutex {
-    mutex: ReentrantMutex<()>,
+    locks: Locks,
 
     // Only actually used for tests
     #[allow(dead_code)]
@@ -16,8 +18,8 @@ struct UniqueReentrantMutex {
 }
 
 impl UniqueReentrantMutex {
-    fn lock(&self) -> ReentrantMutexGuard<()> {
-        self.mutex.lock()
+    fn lock(&self) -> MutexGuardWrapper {
+        self.locks.serial()
     }
 }
 
@@ -32,7 +34,7 @@ lazy_static! {
 impl Default for UniqueReentrantMutex {
     fn default() -> Self {
         Self {
-            mutex: Default::default(),
+            locks: Locks::new(),
             id: MUTEX_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         }
     }

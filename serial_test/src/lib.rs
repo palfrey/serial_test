@@ -41,6 +41,8 @@
 )]
 
 mod code_lock;
+mod rwlock;
+
 #[cfg(feature = "file_locks")]
 mod file_lock;
 
