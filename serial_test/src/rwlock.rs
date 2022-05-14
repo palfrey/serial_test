@@ -57,4 +57,32 @@ impl Locks {
             lock_state = self.arc.condvar.wait(lock_state).unwrap();
         }
     }
+
+    pub fn start_parallel(&self) {
+        let mut lock_state = self.arc.mutex.lock().unwrap();
+        loop {
+            if lock_state.parallels > 0 {
+                // fast path, as someone else already has it locked
+                lock_state.parallels += 1;
+                return;
+            }
+
+            let possible_serial_lock = self.arc.serial.try_lock();
+            if let Some(_) = possible_serial_lock {
+                // We now know no-one has the serial lock, so we can add to parallel
+                lock_state.parallels = 1; // Had to have been 0 before, as otherwise we'd have hit the fast path
+                return;
+            }
+
+            lock_state = self.arc.condvar.wait(lock_state).unwrap();
+        }
+    }
+
+    pub fn end_parallel(&self) {
+        let mut lock_state = self.arc.mutex.lock().unwrap();
+        assert!(lock_state.parallels > 0);
+        lock_state.parallels -= 1;
+        drop(lock_state);
+        self.arc.condvar.notify_one();
+    }
 }

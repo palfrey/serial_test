@@ -64,6 +64,12 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     local_serial_core(attr.into(), input.into()).into()
 }
 
+#[proc_macro_attribute]
+#[proc_macro_error]
+pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
+    local_parallel_core(attr.into(), input.into()).into()
+}
+
 /// Allows for the creation of file-serialised Rust tests
 /// ````
 /// #[test]
@@ -150,12 +156,9 @@ fn get_raw_args(attr: proc_macro2::TokenStream) -> Vec<String> {
     raw_args
 }
 
-fn local_serial_core(
-    attr: proc_macro2::TokenStream,
-    input: proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
+fn get_core_key(attr: proc_macro2::TokenStream) -> String {
     let mut raw_args = get_raw_args(attr);
-    let key = match raw_args.len() {
+    match raw_args.len() {
         0 => "".to_string(),
         1 => raw_args.pop().unwrap(),
         n => {
@@ -164,8 +167,23 @@ fn local_serial_core(
                 n, raw_args
             );
         }
-    };
+    }
+}
+
+fn local_serial_core(
+    attr: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let key = get_core_key(attr);
     serial_setup(input, vec![Box::new(key)], "local")
+}
+
+fn local_parallel_core(
+    attr: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let key = get_core_key(attr);
+    parallel_setup(input, vec![Box::new(key)], "local")
 }
 
 fn fs_serial_core(
@@ -197,10 +215,11 @@ fn fs_serial_core(
     serial_setup(input, args, "fs")
 }
 
-fn serial_setup<T>(
+fn core_setup<T>(
     input: proc_macro2::TokenStream,
     args: Vec<Box<T>>,
     prefix: &str,
+    kind: &str,
 ) -> proc_macro2::TokenStream
 where
     T: quote::ToTokens + ?Sized,
@@ -225,7 +244,9 @@ where
                 {
                     // We assume that any 2-part attribute with the second part as "test" on an async function
                     // is the "do this test with reactor" wrapper. This is true for actix, tokio and async_std.
-                    abort_call_site!("Found async test attribute after serial, which will break");
+                    abort_call_site!(
+                        "Found async test attribute after serial/parallel, which will break"
+                    );
                 }
 
                 // we skip ignore/should_panic because the test framework already deals with it
@@ -238,7 +259,7 @@ where
     if let Some(ret) = return_type {
         match asyncness {
             Some(_) => {
-                let fnname = format_ident!("{}_async_serial_core_with_return", prefix);
+                let fnname = format_ident!("{}_async_{}_core_with_return", prefix, kind);
                 quote! {
                     #(#attrs)
                     *
@@ -248,7 +269,7 @@ where
                 }
             }
             None => {
-                let fnname = format_ident!("{}_serial_core_with_return", prefix);
+                let fnname = format_ident!("{}_{}_core_with_return", prefix, kind);
                 quote! {
                     #(#attrs)
                     *
@@ -261,7 +282,7 @@ where
     } else {
         match asyncness {
             Some(_) => {
-                let fnname = format_ident!("{}_async_serial_core", prefix);
+                let fnname = format_ident!("{}_async_{}_core", prefix, kind);
                 quote! {
                     #(#attrs)
                     *
@@ -271,7 +292,7 @@ where
                 }
             }
             None => {
-                let fnname = format_ident!("{}_serial_core", prefix);
+                let fnname = format_ident!("{}_{}_core", prefix, kind);
                 quote! {
                     #(#attrs)
                     *
@@ -282,6 +303,28 @@ where
             }
         }
     }
+}
+
+fn serial_setup<T>(
+    input: proc_macro2::TokenStream,
+    args: Vec<Box<T>>,
+    prefix: &str,
+) -> proc_macro2::TokenStream
+where
+    T: quote::ToTokens + ?Sized,
+{
+    core_setup(input, args, prefix, "serial")
+}
+
+fn parallel_setup<T>(
+    input: proc_macro2::TokenStream,
+    args: Vec<Box<T>>,
+    prefix: &str,
+) -> proc_macro2::TokenStream
+where
+    T: quote::ToTokens + ?Sized,
+{
+    core_setup(input, args, prefix, "parallel")
 }
 
 #[cfg(test)]

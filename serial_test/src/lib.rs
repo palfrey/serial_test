@@ -41,14 +41,21 @@
 )]
 
 mod code_lock;
+mod parallel_code_lock;
 mod rwlock;
+mod serial_code_lock;
 
 #[cfg(feature = "file_locks")]
 mod file_lock;
 
-pub use code_lock::{
+pub use code_lock::set_max_wait;
+pub use parallel_code_lock::{
+    local_async_parallel_core, local_async_parallel_core_with_return, local_parallel_core,
+    local_parallel_core_with_return,
+};
+pub use serial_code_lock::{
     local_async_serial_core, local_async_serial_core_with_return, local_serial_core,
-    local_serial_core_with_return, set_max_wait,
+    local_serial_core_with_return,
 };
 
 #[cfg(feature = "file_locks")]
@@ -58,6 +65,7 @@ pub use file_lock::{
 };
 
 // Re-export #[serial/file_serial].
+pub use serial_test_derive::parallel;
 #[allow(unused_imports)]
 pub use serial_test_derive::serial;
 
