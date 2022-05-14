@@ -13,7 +13,7 @@ pub fn local_parallel_core_with_return<E>(
     unlock.deref()[name].start_parallel();
     let ret = function();
     unlock.deref()[name].end_parallel();
-    return ret;
+    ret
 }
 
 #[doc(hidden)]
@@ -37,7 +37,7 @@ pub async fn local_async_parallel_core_with_return<E>(
     unlock.deref()[name].start_parallel();
     let ret = fut.await;
     unlock.deref()[name].end_parallel();
-    return ret;
+    ret
 }
 
 #[doc(hidden)]

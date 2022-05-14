@@ -68,8 +68,8 @@ impl Locks {
             }
 
             let possible_serial_lock = self.arc.serial.try_lock();
-            if let Some(_) = possible_serial_lock {
-                // We now know no-one has the serial lock, so we can add to parallel
+            if possible_serial_lock.is_some() {
+                // We now know no-one else has the serial lock, so we can add to parallel
                 lock_state.parallels = 1; // Had to have been 0 before, as otherwise we'd have hit the fast path
                 return;
             }
