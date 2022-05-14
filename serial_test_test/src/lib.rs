@@ -40,8 +40,8 @@ use lazy_static::lazy_static;
 use std::convert::TryInto;
 use std::env;
 use std::fs;
-use std::sync::Barrier;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Barrier;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -82,10 +82,10 @@ pub fn fs_test_fn(count: usize) {
 
 #[cfg(test)]
 mod tests {
-    use crate::{THREAD_ORDERINGS, PARALLEL_BARRIER};
+    use crate::{PARALLEL_BARRIER, THREAD_ORDERINGS};
 
     use super::{init, test_fn};
-    use serial_test::{serial, parallel};
+    use serial_test::{parallel, serial};
 
     #[cfg(feature = "file_locks")]
     use super::fs_test_fn;
@@ -203,7 +203,7 @@ mod tests {
         let count = THREAD_ORDERINGS.lock().unwrap().len();
         // Can't guarantee before or after the parallels
         assert!(count == 0 || count == 3, "count = {}", count);
-    }    
+    }
 
     #[test]
     #[parallel(ordering_key)]
@@ -217,7 +217,7 @@ mod tests {
     fn parallel_with_key_2() {
         PARALLEL_BARRIER.wait();
         THREAD_ORDERINGS.lock().unwrap().push(false);
-    }    
+    }
 
     #[test]
     #[parallel(ordering_key)]
