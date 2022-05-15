@@ -82,9 +82,7 @@ pub fn fs_test_fn(count: usize) {
 
 #[cfg(test)]
 mod tests {
-    use crate::{PARALLEL_BARRIER, THREAD_ORDERINGS};
-
-    use super::{init, test_fn};
+    use super::{init, test_fn, PARALLEL_BARRIER, THREAD_ORDERINGS};
     use serial_test::{parallel, serial};
 
     #[cfg(feature = "file_locks")]
