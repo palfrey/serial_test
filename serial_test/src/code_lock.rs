@@ -1,11 +1,12 @@
 use lazy_static::lazy_static;
 use parking_lot::{Mutex, ReentrantMutex, ReentrantMutexGuard, RwLock};
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
-use std::sync::atomic::AtomicU32;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+    sync::{atomic::AtomicU32, Arc},
+    time::Duration,
+};
 
 struct UniqueReentrantMutex {
     mutex: ReentrantMutex<()>,
@@ -122,8 +123,8 @@ mod tests {
     use super::{check_new_key, wait_duration, LOCKS};
     use itertools::Itertools;
     use parking_lot::RwLock;
-    use std::ops::Deref;
     use std::{
+        ops::Deref,
         sync::{Arc, Barrier},
         thread,
     };
