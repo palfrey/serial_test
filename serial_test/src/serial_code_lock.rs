@@ -1,6 +1,5 @@
-use std::ops::Deref;
-
 use crate::code_lock::{check_new_key, LOCKS};
+use std::ops::Deref;
 
 #[doc(hidden)]
 pub fn local_serial_core_with_return<E>(
@@ -50,13 +49,11 @@ pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<O
 
 #[cfg(test)]
 mod tests {
-    use crate::code_lock::wait_duration;
-
-    use super::{check_new_key, LOCKS};
+    use crate::code_lock::{check_new_key, wait_duration, LOCKS};
     use itertools::Itertools;
     use parking_lot::RwLock;
-    use std::ops::Deref;
     use std::{
+        ops::Deref,
         sync::{Arc, Barrier},
         thread,
     };

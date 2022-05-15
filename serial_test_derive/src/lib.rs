@@ -329,9 +329,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use proc_macro2::{Literal, Punct, Spacing};
-
-    use super::{format_ident, fs_serial_core, local_serial_core, quote, TokenTree};
+    use super::{fs_serial_core, local_serial_core};
+    use proc_macro2::{Literal, Punct, Spacing, TokenTree};
+    use quote::{format_ident, quote};
     use std::iter::FromIterator;
 
     #[test]

@@ -1,6 +1,5 @@
-use std::ops::Deref;
-
 use crate::code_lock::{check_new_key, LOCKS};
+use std::ops::Deref;
 
 #[doc(hidden)]
 pub fn local_parallel_core_with_return<E>(

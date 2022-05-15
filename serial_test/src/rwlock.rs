@@ -1,9 +1,8 @@
+use parking_lot::{ReentrantMutex, ReentrantMutexGuard};
 use std::{
     sync::{Arc, Condvar, Mutex, WaitTimeoutResult},
     time::Duration,
 };
-
-use parking_lot::{ReentrantMutex, ReentrantMutexGuard};
 
 struct LockState {
     parallels: u32,

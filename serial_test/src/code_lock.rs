@@ -1,13 +1,13 @@
+use crate::rwlock::{Locks, MutexGuardWrapper};
 use lazy_static::lazy_static;
 use parking_lot::{Mutex, RwLock};
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
-use std::sync::atomic::AtomicU32;
-use std::sync::Arc;
-use std::time::Duration;
-
-use crate::rwlock::{Locks, MutexGuardWrapper};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+    sync::{atomic::AtomicU32, Arc},
+    time::Duration,
+};
 
 pub(crate) struct UniqueReentrantMutex {
     locks: Locks,
