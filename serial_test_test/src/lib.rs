@@ -37,14 +37,16 @@
 //! ```
 
 use lazy_static::lazy_static;
-use std::convert::TryInto;
-use std::env;
-use std::fs;
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
+use std::{
+    convert::TryInto,
+    env, fs,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    thread,
+    time::Duration,
+};
 
 lazy_static! {
     static ref LOCK: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));

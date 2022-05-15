@@ -39,7 +39,7 @@ jobs:
         with:
           command: fmt
           args: -- --check
-        if: ${{ matrix.features == 'default' }}
+        if: ${{ matrix.features == 'default' && matrix.rust == 'nightly' }}
       - name: Clippy
         uses: actions-rs/cargo@v1.0.3
         env:
