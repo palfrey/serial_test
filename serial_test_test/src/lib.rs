@@ -198,7 +198,7 @@ mod tests {
     }
 
     #[test]
-    #[parallel(ordering_key)]
+    #[serial(ordering_key)]
     fn serial_with_parallel_key_1() {
         let count = THREAD_ORDERINGS.lock().unwrap().len();
         // Can't guarantee before or after the parallels
@@ -227,7 +227,7 @@ mod tests {
     }
 
     #[test]
-    #[parallel(ordering_key)]
+    #[serial(ordering_key)]
     fn serial_with_parallel_key_2() {
         let count = THREAD_ORDERINGS.lock().unwrap().len();
         // Can't guarantee before or after the parallels
