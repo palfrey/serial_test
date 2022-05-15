@@ -37,12 +37,13 @@
 //! ```
 
 use lazy_static::lazy_static;
+use parking_lot::Mutex;
 use std::{
     convert::TryInto,
     env, fs,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc, Barrier, Mutex,
+        Arc, Barrier,
     },
     thread,
     time::Duration,
@@ -200,7 +201,7 @@ mod tests {
     #[test]
     #[serial(ordering_key)]
     fn serial_with_parallel_key_1() {
-        let count = THREAD_ORDERINGS.lock().unwrap().len();
+        let count = THREAD_ORDERINGS.lock().len();
         // Can't guarantee before or after the parallels
         assert!(count == 0 || count == 3, "count = {}", count);
     }
@@ -209,27 +210,27 @@ mod tests {
     #[parallel(ordering_key)]
     fn parallel_with_key_1() {
         PARALLEL_BARRIER.wait();
-        THREAD_ORDERINGS.lock().unwrap().push(false);
+        THREAD_ORDERINGS.lock().push(false);
     }
 
     #[test]
     #[parallel(ordering_key)]
     fn parallel_with_key_2() {
         PARALLEL_BARRIER.wait();
-        THREAD_ORDERINGS.lock().unwrap().push(false);
+        THREAD_ORDERINGS.lock().push(false);
     }
 
     #[test]
     #[parallel(ordering_key)]
     fn parallel_with_key_3() {
         PARALLEL_BARRIER.wait();
-        THREAD_ORDERINGS.lock().unwrap().push(false);
+        THREAD_ORDERINGS.lock().push(false);
     }
 
     #[test]
     #[serial(ordering_key)]
     fn serial_with_parallel_key_2() {
-        let count = THREAD_ORDERINGS.lock().unwrap().len();
+        let count = THREAD_ORDERINGS.lock().len();
         // Can't guarantee before or after the parallels
         assert!(count == 0 || count == 3, "count = {}", count);
     }

@@ -416,6 +416,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "lazy_static",
+ "parking_lot",
  "serial_test",
  "tokio",
 ]

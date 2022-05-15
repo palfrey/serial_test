@@ -1,8 +1,5 @@
-use parking_lot::{ReentrantMutex, ReentrantMutexGuard};
-use std::{
-    sync::{Arc, Condvar, Mutex},
-    time::Duration,
-};
+use parking_lot::{Condvar, Mutex, ReentrantMutex, ReentrantMutexGuard};
+use std::{sync::Arc, time::Duration};
 
 struct LockState {
     parallels: u32,
@@ -43,7 +40,7 @@ impl Locks {
     }
 
     pub fn serial(&self) -> MutexGuardWrapper {
-        let mut lock_state = self.arc.mutex.lock().unwrap();
+        let mut lock_state = self.arc.mutex.lock();
         loop {
             // If all the things we want are true, try to lock out serial
             if lock_state.parallels == 0 {
@@ -56,12 +53,12 @@ impl Locks {
                 }
             }
 
-            lock_state = self.arc.condvar.wait(lock_state).unwrap();
+            self.arc.condvar.wait(&mut lock_state);
         }
     }
 
     pub fn start_parallel(&self) {
-        let mut lock_state = self.arc.mutex.lock().unwrap();
+        let mut lock_state = self.arc.mutex.lock();
         loop {
             if lock_state.parallels > 0 {
                 // fast path, as someone else already has it locked
@@ -78,14 +75,13 @@ impl Locks {
 
             // FIXME: remove timeout, as it's a hack to debug some things
             let duration = Duration::from_secs(1);
-            let results = self.arc.condvar.wait_timeout(lock_state, duration).unwrap();
-            assert!(!results.1.timed_out(), "timeout!");
-            lock_state = results.0;
+            let timeout_result = self.arc.condvar.wait_for(&mut lock_state, duration);
+            assert!(!timeout_result.timed_out(), "timeout!");
         }
     }
 
     pub fn end_parallel(&self) {
-        let mut lock_state = self.arc.mutex.lock().unwrap();
+        let mut lock_state = self.arc.mutex.lock();
         assert!(lock_state.parallels > 0);
         lock_state.parallels -= 1;
         drop(lock_state);
