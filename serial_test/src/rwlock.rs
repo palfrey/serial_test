@@ -1,6 +1,6 @@
 use parking_lot::{ReentrantMutex, ReentrantMutexGuard};
 use std::{
-    sync::{Arc, Condvar, Mutex, WaitTimeoutResult},
+    sync::{Arc, Condvar, Mutex},
     time::Duration,
 };
 
@@ -78,9 +78,9 @@ impl Locks {
 
             // FIXME: remove timeout, as it's a hack to debug some things
             let duration = Duration::from_secs(1);
-            let res: WaitTimeoutResult;
-            (lock_state, res) = self.arc.condvar.wait_timeout(lock_state, duration).unwrap();
-            assert!(!res.timed_out(), "timeout!");
+            let results = self.arc.condvar.wait_timeout(lock_state, duration).unwrap();
+            assert!(!results.1.timed_out(), "timeout!");
+            lock_state = results.0;
         }
     }
 
