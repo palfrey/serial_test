@@ -52,7 +52,7 @@ use std::{
 lazy_static! {
     static ref LOCK: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));
     static ref THREAD_ORDERINGS: Arc<Mutex<Vec<bool>>> = Arc::new(Mutex::new(Vec::new()));
-    static ref PARALLEL_BARRIER: Arc<Barrier> = Arc::new(Barrier::new(3));
+    static ref PARALLEL_BARRIER: Barrier = Barrier::new(3);
 }
 
 fn init() {
@@ -87,6 +87,7 @@ pub fn fs_test_fn(count: usize) {
 mod tests {
     use super::{init, test_fn, PARALLEL_BARRIER, THREAD_ORDERINGS};
     use serial_test::{parallel, serial};
+    use std::{thread, time::Duration};
 
     #[cfg(feature = "file_locks")]
     use super::fs_test_fn;
@@ -209,21 +210,30 @@ mod tests {
     #[test]
     #[parallel(ordering_key)]
     fn parallel_with_key_1() {
+        thread::sleep(Duration::from_secs(1));
+        println!("Waiting barrier 1");
         PARALLEL_BARRIER.wait();
+        println!("Waiting lock 1");
         THREAD_ORDERINGS.lock().push(false);
     }
 
     #[test]
     #[parallel(ordering_key)]
     fn parallel_with_key_2() {
+        thread::sleep(Duration::from_secs(2));
+        println!("Waiting barrier 2");
         PARALLEL_BARRIER.wait();
+        println!("Waiting lock 2");
         THREAD_ORDERINGS.lock().push(false);
     }
 
     #[test]
     #[parallel(ordering_key)]
     fn parallel_with_key_3() {
+        thread::sleep(Duration::from_secs(3));
+        println!("Waiting barrier 3");
         PARALLEL_BARRIER.wait();
+        println!("Waiting lock 3");
         THREAD_ORDERINGS.lock().push(false);
     }
 
