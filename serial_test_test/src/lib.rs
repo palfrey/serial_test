@@ -61,21 +61,21 @@ fn init() {
 
 pub fn test_fn(count: usize) {
     init();
-    println!("Start {}", count);
+    println!("(non-fs) Start {}", count);
     LOCK.store(count, Ordering::Relaxed);
     thread::sleep(Duration::from_millis(1000 * (count as u64)));
-    println!("End {}", count);
+    println!("(non-fs) End {}", count);
     assert_eq!(LOCK.load(Ordering::Relaxed), count);
 }
 
 pub fn fs_test_fn(count: usize) {
     init();
-    println!("Start {}", count);
+    println!("(fs) Start {}", count);
     let mut pathbuf = env::temp_dir();
     pathbuf.push("serial-test-test");
     fs::write(pathbuf.as_path(), count.to_ne_bytes()).unwrap();
     thread::sleep(Duration::from_millis(1000 * (count as u64)));
-    println!("End {}", count);
+    println!("(fs) End {}", count);
 
     let loaded = fs::read(pathbuf.as_path())
         .map(|bytes| usize::from_ne_bytes(bytes.as_slice().try_into().unwrap()))
