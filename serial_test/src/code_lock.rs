@@ -64,19 +64,25 @@ pub(crate) fn wait_duration() -> Duration {
 }
 
 pub(crate) fn check_new_key(name: &str) {
-    // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
-    let new_key = {
+    loop {
+        // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
         let unlock = LOCKS
             .try_read_recursive_for(wait_duration())
             .expect("read lock didn't work");
-        !unlock.deref().contains_key(name)
-    };
-    if new_key {
-        // This is the rare path, which avoids the multi-writer situation mostly
-        let mut lock = LOCKS
-            .try_write_for(wait_duration())
-            .expect("write lock didn't work");
+        if unlock.deref().contains_key(name) {
+            break;
+        }
+        drop(unlock); // so that we don't hold the read lock and so the writer can maybe succeed
 
-        lock.deref_mut().entry(name.to_string()).or_default();
+        // This is the rare path, which avoids the multi-writer situation mostly
+        let try_lock = LOCKS.try_write();
+
+        if let Some(mut lock) = try_lock {
+            lock.deref_mut().entry(name.to_string()).or_default();
+            break;
+        }
+
+        // If the try_lock fails, then go around the loop again
+        // Odds are another test was also locking on the write and has now written the key
     }
 }
