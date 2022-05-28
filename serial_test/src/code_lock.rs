@@ -49,8 +49,8 @@ impl Default for UniqueReentrantMutex {
     }
 }
 
-/// Sets the maximum amount of time the serial locks will wait to unlock
-/// By default, this is set to 60 seconds, which is almost always much longer than is needed
+/// Sets the maximum amount of time the serial locks will wait to unlock.
+/// By default, this is set to 60 seconds, which is almost always much longer than is needed.
 /// This is deliberately set high to try and avoid situations where we accidentally hit the limits
 /// but is set at all so we can timeout rather than hanging forever.
 ///

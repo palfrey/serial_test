@@ -15,10 +15,19 @@
 //! fn test_serial_another() {
 //!   // Do things
 //! }
+//!
+//! #[test]
+//! #[parallel]
+//! fn test_parallel_another() {
+//!   // Do parallel things
+//! }
 //! ````
 //! Multiple tests with the [serial](macro@serial) attribute are guaranteed to be executed in serial. Ordering
-//! of the tests is not guaranteed however. Tests without the `serial` attribute may run at any time, including
-//! in parallel to tests marked as `serial`. Note that if you're using an async test reactor attribute (e.g.
+//! of the tests is not guaranteed however. Other tests with the [parallel](macro@parallel) attribute may run
+//! at the same time as each other, but not at the same time as a test with [serial](macro@serial). Tests with
+//! neither attribute may run at any time and no guarantees are made about their timing!
+//!
+//! Note that if you're using an async test reactor attribute (e.g.
 //! `tokio::test` or `actix_rt::test`) then they should be listed *before* `serial`, otherwise we don't get an
 //! async function and things break. There's now an error for this case to improve debugging.
 //!

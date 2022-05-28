@@ -26,7 +26,10 @@ use std::ops::Deref;
 /// }
 /// ````
 /// Multiple tests with the [serial](macro@serial) attribute are guaranteed to be executed in serial. Ordering
-/// of the tests is not guaranteed however. If you want different subsets of tests to be serialised with each
+/// of the tests is not guaranteed however. If you have other tests that can be run in parallel, but would clash
+/// if run at the same time as the [serial](macro@serial) tests, you can use the [parallel](macro@parallel) attribute.
+///
+/// If you want different subsets of tests to be serialised with each
 /// other, but not depend on other subsets, you can add an argument to [serial](macro@serial), and all calls
 /// with identical arguments will be called in serial. e.g.
 /// ````
@@ -57,13 +60,41 @@ use std::ops::Deref;
 /// `test_serial_one` and `test_serial_another` will be executed in serial, as will `test_serial_third` and `test_serial_fourth`
 /// but neither sequence will be blocked by the other
 ///
-/// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) is supported
+/// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) are supported
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     local_serial_core(attr.into(), input.into()).into()
 }
 
+/// Allows for the creation of parallel Rust tests that won't clash with serial tests
+/// ````
+/// #[test]
+/// #[serial]
+/// fn test_serial_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[parallel]
+/// fn test_parallel_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[parallel]
+/// fn test_parallel_two() {
+///   // Do things
+/// }
+/// ````
+/// Multiple tests with the [parallel](macro@parallel) attribute may run in parallel, but not at the
+/// same time as [serial](macro@serial) tests. e.g. in the example code above, `test_parallel_one`
+/// and `test_parallel_two` may run at the same time, but `test_serial_one` is guaranteed not to run
+/// at the same time as either of them. [parallel](macro@parallel) also takes key arguments for groups
+/// of tests as per [serial](macro@serial).
+///
+/// Note that this has zero effect on [file_serial](macro@file_serial) tests, as that uses a different
+/// serialisation mechanism.
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
