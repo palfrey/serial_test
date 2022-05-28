@@ -1,3 +1,5 @@
+#![allow(clippy::await_holding_lock)]
+
 use crate::code_lock::{check_new_key, LOCKS};
 use std::ops::Deref;
 
