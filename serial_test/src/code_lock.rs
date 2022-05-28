@@ -1,12 +1,13 @@
 use crate::rwlock::{Locks, MutexGuardWrapper};
 use lazy_static::lazy_static;
+use log::debug;
 use parking_lot::{Mutex, RwLock};
 use std::{
     cell::RefCell,
     collections::HashMap,
     ops::{Deref, DerefMut},
     sync::{atomic::AtomicU32, Arc},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 pub(crate) struct UniqueReentrantMutex {
@@ -64,25 +65,35 @@ pub(crate) fn wait_duration() -> Duration {
 }
 
 pub(crate) fn check_new_key(name: &str) {
+    let start = Instant::now();
     loop {
+        let duration = Instant::now() - start;
+        debug!("Waiting for '{}' {:?}", name, duration);
         // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
-        let unlock = LOCKS
-            .try_read_recursive_for(wait_duration())
-            .expect("read lock didn't work");
-        if unlock.deref().contains_key(name) {
-            break;
+        let try_unlock = LOCKS.try_read_recursive_for(Duration::from_secs(1));
+        if let Some(unlock) = try_unlock {
+            if unlock.deref().contains_key(name) {
+                return;
+            }
+            drop(unlock); // so that we don't hold the read lock and so the writer can maybe succeed
+        } else {
+            continue; // wasn't able to get read lock
         }
-        drop(unlock); // so that we don't hold the read lock and so the writer can maybe succeed
 
         // This is the rare path, which avoids the multi-writer situation mostly
-        let try_lock = LOCKS.try_write();
+        let try_lock = LOCKS.try_write_for(Duration::from_secs(1));
 
         if let Some(mut lock) = try_lock {
             lock.deref_mut().entry(name.to_string()).or_default();
-            break;
+            return;
         }
 
         // If the try_lock fails, then go around the loop again
         // Odds are another test was also locking on the write and has now written the key
+
+        let duration = Instant::now() - start;
+        if duration >= wait_duration() {
+            panic!("check_new_key timed out!");
+        }
     }
 }

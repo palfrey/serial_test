@@ -56,7 +56,7 @@ lazy_static! {
 }
 
 fn init() {
-    let _ = env_logger::builder().is_test(true).try_init();
+    let _ = env_logger::builder().is_test(false).try_init();
 }
 
 pub fn test_fn(count: usize) {

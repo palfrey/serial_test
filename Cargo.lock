@@ -391,6 +391,7 @@ dependencies = [
  "fslock",
  "itertools",
  "lazy_static",
+ "log",
  "parking_lot",
  "serial_test_derive",
 ]
