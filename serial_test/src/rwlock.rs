@@ -61,7 +61,7 @@ impl Locks {
             resets += 1;
             if resets == 10 {
                 panic!("Tried loop 10 times!");
-            }            
+            }
         }
     }
 
