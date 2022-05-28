@@ -41,6 +41,7 @@ impl Locks {
 
     pub fn serial(&self) -> MutexGuardWrapper {
         let mut lock_state = self.arc.mutex.lock();
+        let mut resets: u8 = 0;
         loop {
             // If all the things we want are true, try to lock out serial
             if lock_state.parallels == 0 {
@@ -53,7 +54,14 @@ impl Locks {
                 }
             }
 
-            self.arc.condvar.wait(&mut lock_state);
+            // FIXME: hack
+            let duration = Duration::from_secs(10);
+            let timeout_result = self.arc.condvar.wait_for(&mut lock_state, duration);
+            assert!(!timeout_result.timed_out(), "timeout!");
+            resets += 1;
+            if resets == 10 {
+                panic!("Tried loop 10 times!");
+            }            
         }
     }
 
