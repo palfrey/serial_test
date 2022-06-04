@@ -26,7 +26,10 @@ use std::ops::Deref;
 /// }
 /// ````
 /// Multiple tests with the [serial](macro@serial) attribute are guaranteed to be executed in serial. Ordering
-/// of the tests is not guaranteed however. If you want different subsets of tests to be serialised with each
+/// of the tests is not guaranteed however. If you have other tests that can be run in parallel, but would clash
+/// if run at the same time as the [serial](macro@serial) tests, you can use the [parallel](macro@parallel) attribute.
+///
+/// If you want different subsets of tests to be serialised with each
 /// other, but not depend on other subsets, you can add an argument to [serial](macro@serial), and all calls
 /// with identical arguments will be called in serial. e.g.
 /// ````
@@ -57,11 +60,45 @@ use std::ops::Deref;
 /// `test_serial_one` and `test_serial_another` will be executed in serial, as will `test_serial_third` and `test_serial_fourth`
 /// but neither sequence will be blocked by the other
 ///
-/// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) is supported
+/// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) are supported
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     local_serial_core(attr.into(), input.into()).into()
+}
+
+/// Allows for the creation of parallel Rust tests that won't clash with serial tests
+/// ````
+/// #[test]
+/// #[serial]
+/// fn test_serial_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[parallel]
+/// fn test_parallel_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[parallel]
+/// fn test_parallel_two() {
+///   // Do things
+/// }
+/// ````
+/// Multiple tests with the [parallel](macro@parallel) attribute may run in parallel, but not at the
+/// same time as [serial](macro@serial) tests. e.g. in the example code above, `test_parallel_one`
+/// and `test_parallel_two` may run at the same time, but `test_serial_one` is guaranteed not to run
+/// at the same time as either of them. [parallel](macro@parallel) also takes key arguments for groups
+/// of tests as per [serial](macro@serial).
+///
+/// Note that this has zero effect on [file_serial](macro@file_serial) tests, as that uses a different
+/// serialisation mechanism.
+#[proc_macro_attribute]
+#[proc_macro_error]
+pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
+    local_parallel_core(attr.into(), input.into()).into()
 }
 
 /// Allows for the creation of file-serialised Rust tests
@@ -150,12 +187,9 @@ fn get_raw_args(attr: proc_macro2::TokenStream) -> Vec<String> {
     raw_args
 }
 
-fn local_serial_core(
-    attr: proc_macro2::TokenStream,
-    input: proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
+fn get_core_key(attr: proc_macro2::TokenStream) -> String {
     let mut raw_args = get_raw_args(attr);
-    let key = match raw_args.len() {
+    match raw_args.len() {
         0 => "".to_string(),
         1 => raw_args.pop().unwrap(),
         n => {
@@ -164,8 +198,23 @@ fn local_serial_core(
                 n, raw_args
             );
         }
-    };
+    }
+}
+
+fn local_serial_core(
+    attr: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let key = get_core_key(attr);
     serial_setup(input, vec![Box::new(key)], "local")
+}
+
+fn local_parallel_core(
+    attr: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let key = get_core_key(attr);
+    parallel_setup(input, vec![Box::new(key)], "local")
 }
 
 fn fs_serial_core(
@@ -197,10 +246,11 @@ fn fs_serial_core(
     serial_setup(input, args, "fs")
 }
 
-fn serial_setup<T>(
+fn core_setup<T>(
     input: proc_macro2::TokenStream,
     args: Vec<Box<T>>,
     prefix: &str,
+    kind: &str,
 ) -> proc_macro2::TokenStream
 where
     T: quote::ToTokens + ?Sized,
@@ -225,7 +275,9 @@ where
                 {
                     // We assume that any 2-part attribute with the second part as "test" on an async function
                     // is the "do this test with reactor" wrapper. This is true for actix, tokio and async_std.
-                    abort_call_site!("Found async test attribute after serial, which will break");
+                    abort_call_site!(
+                        "Found async test attribute after serial/parallel, which will break"
+                    );
                 }
 
                 // we skip ignore/should_panic because the test framework already deals with it
@@ -238,7 +290,7 @@ where
     if let Some(ret) = return_type {
         match asyncness {
             Some(_) => {
-                let fnname = format_ident!("{}_async_serial_core_with_return", prefix);
+                let fnname = format_ident!("{}_async_{}_core_with_return", prefix, kind);
                 quote! {
                     #(#attrs)
                     *
@@ -248,7 +300,7 @@ where
                 }
             }
             None => {
-                let fnname = format_ident!("{}_serial_core_with_return", prefix);
+                let fnname = format_ident!("{}_{}_core_with_return", prefix, kind);
                 quote! {
                     #(#attrs)
                     *
@@ -261,7 +313,7 @@ where
     } else {
         match asyncness {
             Some(_) => {
-                let fnname = format_ident!("{}_async_serial_core", prefix);
+                let fnname = format_ident!("{}_async_{}_core", prefix, kind);
                 quote! {
                     #(#attrs)
                     *
@@ -271,7 +323,7 @@ where
                 }
             }
             None => {
-                let fnname = format_ident!("{}_serial_core", prefix);
+                let fnname = format_ident!("{}_{}_core", prefix, kind);
                 quote! {
                     #(#attrs)
                     *
@@ -284,11 +336,33 @@ where
     }
 }
 
+fn serial_setup<T>(
+    input: proc_macro2::TokenStream,
+    args: Vec<Box<T>>,
+    prefix: &str,
+) -> proc_macro2::TokenStream
+where
+    T: quote::ToTokens + ?Sized,
+{
+    core_setup(input, args, prefix, "serial")
+}
+
+fn parallel_setup<T>(
+    input: proc_macro2::TokenStream,
+    args: Vec<Box<T>>,
+    prefix: &str,
+) -> proc_macro2::TokenStream
+where
+    T: quote::ToTokens + ?Sized,
+{
+    core_setup(input, args, prefix, "parallel")
+}
+
 #[cfg(test)]
 mod tests {
-    use proc_macro2::{Literal, Punct, Spacing};
-
-    use super::{format_ident, fs_serial_core, local_serial_core, quote, TokenTree};
+    use super::{fs_serial_core, local_serial_core};
+    use proc_macro2::{Literal, Punct, Spacing, TokenTree};
+    use quote::{format_ident, quote};
     use std::iter::FromIterator;
 
     #[test]

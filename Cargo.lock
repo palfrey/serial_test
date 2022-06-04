@@ -391,6 +391,7 @@ dependencies = [
  "fslock",
  "itertools",
  "lazy_static",
+ "log",
  "parking_lot",
  "serial_test_derive",
 ]
@@ -416,6 +417,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "lazy_static",
+ "parking_lot",
  "serial_test",
  "tokio",
 ]

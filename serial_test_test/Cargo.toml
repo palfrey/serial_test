@@ -10,6 +10,7 @@ edition = "2018"
 serial_test = { path="../serial_test" }
 lazy_static = "^1.2"
 env_logger = "^0.9"
+parking_lot = "^0.12"
 
 [dev-dependencies]
 tokio = { version = "^1.17", features = ["macros", "rt"] }

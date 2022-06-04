@@ -15,10 +15,19 @@
 //! fn test_serial_another() {
 //!   // Do things
 //! }
+//!
+//! #[test]
+//! #[parallel]
+//! fn test_parallel_another() {
+//!   // Do parallel things
+//! }
 //! ````
 //! Multiple tests with the [serial](macro@serial) attribute are guaranteed to be executed in serial. Ordering
-//! of the tests is not guaranteed however. Tests without the `serial` attribute may run at any time, including
-//! in parallel to tests marked as `serial`. Note that if you're using an async test reactor attribute (e.g.
+//! of the tests is not guaranteed however. Other tests with the [parallel](macro@parallel) attribute may run
+//! at the same time as each other, but not at the same time as a test with [serial](macro@serial). Tests with
+//! neither attribute may run at any time and no guarantees are made about their timing!
+//!
+//! Note that if you're using an async test reactor attribute (e.g.
 //! `tokio::test` or `actix_rt::test`) then they should be listed *before* `serial`, otherwise we don't get an
 //! async function and things break. There's now an error for this case to improve debugging.
 //!
@@ -41,12 +50,21 @@
 )]
 
 mod code_lock;
+mod parallel_code_lock;
+mod rwlock;
+mod serial_code_lock;
+
 #[cfg(feature = "file_locks")]
 mod file_lock;
 
-pub use code_lock::{
+pub use code_lock::set_max_wait;
+pub use parallel_code_lock::{
+    local_async_parallel_core, local_async_parallel_core_with_return, local_parallel_core,
+    local_parallel_core_with_return,
+};
+pub use serial_code_lock::{
     local_async_serial_core, local_async_serial_core_with_return, local_serial_core,
-    local_serial_core_with_return, set_max_wait,
+    local_serial_core_with_return,
 };
 
 #[cfg(feature = "file_locks")]
@@ -56,6 +74,7 @@ pub use file_lock::{
 };
 
 // Re-export #[serial/file_serial].
+pub use serial_test_derive::parallel;
 #[allow(unused_imports)]
 pub use serial_test_derive::serial;
 

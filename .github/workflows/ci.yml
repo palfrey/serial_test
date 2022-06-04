@@ -52,14 +52,20 @@ jobs:
         uses: actions-rs/cargo@v1.0.3
         with:
           command: test
-          args: --features ${{ matrix.features }}
+          args: --features ${{ matrix.features }} -- --nocapture
+        env:
+          RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
+          RUST_LOG: debug
         if: ${{ matrix.features != 'all' }}
       - name: Build and test all features
         uses: actions-rs/cargo@v1.0.3
         with:
           command: test
-          args: --all-features
+          args: --all-features -- --nocapture
         if: ${{ matrix.features == 'all' }}
+        env:
+          RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
+          RUST_LOG: debug
 
   multi-os-testing:
     name: Test suite
@@ -81,7 +87,10 @@ jobs:
         uses: actions-rs/cargo@v1.0.3
         with:
           command: test
-          args: --all-features
+          args: --all-features -- --nocapture
+        env:
+          RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
+          RUST_LOG: debug
 
   minimal-versions:
     name: minimal versions check

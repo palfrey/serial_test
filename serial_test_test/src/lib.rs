@@ -37,12 +37,13 @@
 //! ```
 
 use lazy_static::lazy_static;
+use parking_lot::Mutex;
 use std::{
     convert::TryInto,
     env, fs,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc,
+        Arc, Barrier,
     },
     thread,
     time::Duration,
@@ -50,29 +51,31 @@ use std::{
 
 lazy_static! {
     static ref LOCK: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));
+    static ref THREAD_ORDERINGS: Arc<Mutex<Vec<bool>>> = Arc::new(Mutex::new(Vec::new()));
+    static ref PARALLEL_BARRIER: Barrier = Barrier::new(3);
 }
 
 fn init() {
-    let _ = env_logger::builder().is_test(true).try_init();
+    let _ = env_logger::builder().is_test(false).try_init();
 }
 
 pub fn test_fn(count: usize) {
     init();
-    println!("Start {}", count);
+    println!("(non-fs) Start {}", count);
     LOCK.store(count, Ordering::Relaxed);
     thread::sleep(Duration::from_millis(1000 * (count as u64)));
-    println!("End {}", count);
+    println!("(non-fs) End {}", count);
     assert_eq!(LOCK.load(Ordering::Relaxed), count);
 }
 
 pub fn fs_test_fn(count: usize) {
     init();
-    println!("Start {}", count);
+    println!("(fs) Start {}", count);
     let mut pathbuf = env::temp_dir();
     pathbuf.push("serial-test-test");
     fs::write(pathbuf.as_path(), count.to_ne_bytes()).unwrap();
     thread::sleep(Duration::from_millis(1000 * (count as u64)));
-    println!("End {}", count);
+    println!("(fs) End {}", count);
 
     let loaded = fs::read(pathbuf.as_path())
         .map(|bytes| usize::from_ne_bytes(bytes.as_slice().try_into().unwrap()))
@@ -82,8 +85,9 @@ pub fn fs_test_fn(count: usize) {
 
 #[cfg(test)]
 mod tests {
-    use super::{init, test_fn};
-    use serial_test::serial;
+    use super::{init, test_fn, PARALLEL_BARRIER, THREAD_ORDERINGS};
+    use serial_test::{parallel, serial};
+    use std::{thread, time::Duration};
 
     #[cfg(feature = "file_locks")]
     use super::fs_test_fn;
@@ -193,5 +197,51 @@ mod tests {
     #[serial(test_key)]
     fn test_with_key() {
         init();
+    }
+
+    #[test]
+    #[serial(ordering_key)]
+    fn serial_with_parallel_key_1() {
+        let count = THREAD_ORDERINGS.lock().len();
+        // Can't guarantee before or after the parallels
+        assert!(count == 0 || count == 3, "count = {}", count);
+    }
+
+    #[test]
+    #[parallel(ordering_key)]
+    fn parallel_with_key_1() {
+        thread::sleep(Duration::from_secs(1));
+        println!("Waiting barrier 1");
+        PARALLEL_BARRIER.wait();
+        println!("Waiting lock 1");
+        THREAD_ORDERINGS.lock().push(false);
+    }
+
+    #[test]
+    #[parallel(ordering_key)]
+    fn parallel_with_key_2() {
+        thread::sleep(Duration::from_secs(2));
+        println!("Waiting barrier 2");
+        PARALLEL_BARRIER.wait();
+        println!("Waiting lock 2");
+        THREAD_ORDERINGS.lock().push(false);
+    }
+
+    #[test]
+    #[parallel(ordering_key)]
+    fn parallel_with_key_3() {
+        thread::sleep(Duration::from_secs(3));
+        println!("Waiting barrier 3");
+        PARALLEL_BARRIER.wait();
+        println!("Waiting lock 3");
+        THREAD_ORDERINGS.lock().push(false);
+    }
+
+    #[test]
+    #[serial(ordering_key)]
+    fn serial_with_parallel_key_2() {
+        let count = THREAD_ORDERINGS.lock().len();
+        // Can't guarantee before or after the parallels
+        assert!(count == 0 || count == 3, "count = {}", count);
     }
 }

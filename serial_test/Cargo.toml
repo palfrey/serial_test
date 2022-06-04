@@ -16,6 +16,7 @@ parking_lot = "^0.12"
 serial_test_derive = { version = "~0.7.0", path = "../serial_test_derive" }
 fslock = {version = "0.2", optional = true}
 document-features = {version = "0.2", optional=true}
+log = "0.4"
 
 [dev-dependencies]
 itertools = "0.10"
