@@ -13,7 +13,7 @@ pub fn local_parallel_core_with_return<E>(
 
     let unlock = LOCKS.read_recursive();
     unlock.deref()[name].start_parallel();
-    let res = panic::catch_unwind(|| function());
+    let res = panic::catch_unwind(function);
     unlock.deref()[name].end_parallel();
     match res {
         Ok(ret) => ret,
