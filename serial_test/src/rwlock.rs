@@ -39,6 +39,11 @@ impl Locks {
         }
     }
 
+    #[cfg(test)]
+    pub fn is_locked(&self) -> bool {
+        self.arc.serial.is_locked()
+    }
+
     pub fn serial(&self) -> MutexGuardWrapper {
         let mut lock_state = self.arc.mutex.lock();
         loop {
@@ -87,5 +92,11 @@ impl Locks {
         lock_state.parallels -= 1;
         drop(lock_state);
         self.arc.condvar.notify_one();
+    }
+
+    #[cfg(test)]
+    pub fn parallel_count(&self) -> u32 {
+        let lock_state = self.arc.mutex.lock();
+        lock_state.parallels
     }
 }
