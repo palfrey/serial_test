@@ -51,6 +51,7 @@ pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<O
 
 #[cfg(test)]
 mod tests {
+    use super::local_serial_core;
     use crate::code_lock::{check_new_key, wait_duration, LOCKS};
     use itertools::Itertools;
     use parking_lot::RwLock;
@@ -99,5 +100,16 @@ mod tests {
         assert_eq!(ptrs_read_lock.len(), count);
         println!("{:?}", ptrs_read_lock);
         assert_eq!(ptrs_read_lock.iter().unique().count(), 1);
+    }
+
+    #[test]
+    fn unlock_on_assert() {
+        let _ = std::panic::catch_unwind(|| {
+            local_serial_core("assert", || {
+                assert!(false);
+            })
+        });
+        let unlock = LOCKS.read_recursive();
+        assert!(!unlock.deref()["assert"].is_locked());
     }
 }

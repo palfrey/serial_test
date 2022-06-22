@@ -30,6 +30,16 @@ impl UniqueReentrantMutex {
     pub(crate) fn end_parallel(&self) {
         self.locks.end_parallel();
     }
+
+    #[cfg(test)]
+    pub fn parallel_count(&self) -> u32 {
+        self.locks.parallel_count()
+    }
+
+    #[cfg(test)]
+    pub fn is_locked(&self) -> bool {
+        self.locks.is_locked()
+    }
 }
 
 lazy_static! {
