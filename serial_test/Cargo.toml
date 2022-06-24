@@ -16,7 +16,7 @@ parking_lot = "^0.12"
 serial_test_derive = { version = "~0.7.0", path = "../serial_test_derive" }
 fslock = {version = "0.2", optional = true}
 document-features = {version = "0.2", optional=true}
-log = "0.4"
+log = {version = "0.4", optional = true}
 futures = {version = "^0.3", default_features = false, features = ["executor"] }
 
 [dev-dependencies]
@@ -24,7 +24,9 @@ itertools = "0.10"
 tokio = { version = "^1.17", features = ["macros", "rt"] }
 
 [features]
-default = []
+default = ["logging"]
+
+logging = ["log"]
 
 ## The file_locks feature unlocks the `file_serial` macro
 file_locks = ["fslock"]

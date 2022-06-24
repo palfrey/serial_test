@@ -1,5 +1,6 @@
 use crate::rwlock::{Locks, MutexGuardWrapper};
 use lazy_static::lazy_static;
+#[cfg(feature = "logging")]
 use log::debug;
 use parking_lot::{Mutex, RwLock};
 use std::{
@@ -78,6 +79,7 @@ pub(crate) fn check_new_key(name: &str) {
     let start = Instant::now();
     loop {
         let duration = Instant::now() - start;
+        #[cfg(feature = "logging")]
         debug!("Waiting for '{}' {:?}", name, duration);
         // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
         let try_unlock = LOCKS.try_read_recursive_for(Duration::from_secs(1));
