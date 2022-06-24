@@ -21,6 +21,7 @@ jobs:
           - 1.51.0
         features:
           - default
+          - no_defaults
           - file_locks
         include:
         - rust: nightly
@@ -56,7 +57,7 @@ jobs:
         env:
           RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
           RUST_LOG: debug
-        if: ${{ matrix.features != 'all' }}
+        if: ${{ matrix.features != 'all' && matrix.features != 'no_defaults' }}
       - name: Build and test all features
         uses: actions-rs/cargo@v1.0.3
         with:
@@ -66,6 +67,15 @@ jobs:
         env:
           RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
           RUST_LOG: debug
+      - name: Build and test without default features
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: test
+          args: --no-default-features -- --nocapture
+        if: ${{ matrix.features == 'no_defaults' }}
+        env:
+          RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
+          RUST_LOG: debug          
 
   multi-os-testing:
     name: Test suite
