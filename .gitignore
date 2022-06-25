@@ -1,3 +1,4 @@
 /target
 *.jpg
 .DS_Store
+.vscode/

@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout)] // because test code
+
 //! Not inside the cfg(test) block because of <https://github.com/rust-lang/rust/issues/45599>
 //! ```
 //! #[macro_use] extern crate serial_test;

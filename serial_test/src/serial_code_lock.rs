@@ -50,6 +50,7 @@ pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<O
 }
 
 #[cfg(test)]
+#[allow(clippy::print_stdout)]
 mod tests {
     use super::local_serial_core;
     use crate::code_lock::{check_new_key, wait_duration, LOCKS};
