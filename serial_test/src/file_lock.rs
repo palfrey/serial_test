@@ -1,6 +1,6 @@
 use fslock::LockFile;
 #[cfg(feature = "logging")]
-use log::{debug, warn};
+use log::debug;
 use std::{
     env,
     fs::{self, File},
@@ -28,8 +28,9 @@ impl Lock {
                 let mut count_buf = [0; 4];
                 match file.read_exact(&mut count_buf) {
                     Ok(_) => u32::from_ne_bytes(count_buf),
-                    Err(err) => {
-                        warn!("Error loading count file: {}", err);
+                    Err(_err) => {
+                        #[cfg(feature = "logging")]
+                        debug!("Error loading count file: {}", _err);
                         0u32
                     }
                 }
@@ -68,17 +69,20 @@ impl Lock {
             if self.parallel_count == 0 {
                 return;
             }
+            #[cfg(feature = "logging")]
             debug!("Waiting because parallel count is {}", self.parallel_count);
             // unlock here is safe because we re-lock before returning
             self.unlock();
             thread::sleep(Duration::from_secs(1));
             self.lockfile.lock().unwrap();
+            #[cfg(feature = "logging")]
             debug!("Locked for {:?}", self.path);
             self.parallel_count = Lock::read_parallel_count(&self.path)
         }
     }
 
     fn unlock(self: &mut Lock) {
+        #[cfg(feature = "logging")]
         debug!("Unlocking {}", self.path);
         self.lockfile.unlock().unwrap();
     }
@@ -88,15 +92,8 @@ impl Lock {
     }
 
     fn write_parallel(self: &Lock) {
-        warn!("Writing out {} to {}", self.parallel_count, self.path);
         let mut file = File::create(&Lock::gen_count_file(&self.path)).unwrap();
-        let buffer = self.parallel_count.to_ne_bytes();
-        assert_eq!(buffer.len(), 4);
-        warn!("Buffer: {:?}", buffer);
-        let res = file.write(&buffer).unwrap();
-        warn!("Wrote {}", res);
-        file.sync_all().unwrap();
-        drop(file);
+        file.write_all(&self.parallel_count.to_ne_bytes()).unwrap();
     }
 
     pub(crate) fn start_parallel(mut self: Lock) {
