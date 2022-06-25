@@ -1,4 +1,6 @@
 use fslock::LockFile;
+#[cfg(feature = "logging")]
+use log::debug;
 use std::{env, fs, path::Path};
 
 struct Lock {
@@ -8,7 +10,8 @@ struct Lock {
 impl Lock {
     fn unlock(self: &mut Lock) {
         self.lockfile.unlock().unwrap();
-        println!("Unlock");
+        #[cfg(feature = "logging")]
+        debug!("Unlock");
     }
 }
 
@@ -17,9 +20,11 @@ fn do_lock(path: &str) -> Lock {
         fs::write(path, "").unwrap_or_else(|_| panic!("Lock file path was {:?}", path))
     }
     let mut lockfile = LockFile::open(path).unwrap();
-    println!("Waiting on {:?}", path);
+    #[cfg(feature = "logging")]
+    debug!("Waiting on {:?}", path);
     lockfile.lock().unwrap();
-    println!("Locked for {:?}", path);
+    #[cfg(feature = "logging")]
+    debug!("Locked for {:?}", path);
     Lock { lockfile }
 }
 
