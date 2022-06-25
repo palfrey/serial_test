@@ -143,6 +143,13 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     fs_serial_core(attr.into(), input.into()).into()
 }
 
+#[proc_macro_attribute]
+#[proc_macro_error]
+#[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
+pub fn file_parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
+    fs_parallel_core(attr.into(), input.into()).into()
+}
+
 // Based off of https://github.com/dtolnay/quote/issues/20#issuecomment-437341743
 struct QuoteOption<T>(Option<T>);
 
@@ -217,10 +224,7 @@ fn local_parallel_core(
     parallel_setup(input, vec![Box::new(key)], "local")
 }
 
-fn fs_serial_core(
-    attr: proc_macro2::TokenStream,
-    input: proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
+fn fs_args(attr: proc_macro2::TokenStream) -> Vec<Box<dyn ToTokens>> {
     let none_ident = Box::new(format_ident!("None"));
     let mut args: Vec<Box<dyn quote::ToTokens>> = Vec::new();
     let mut raw_args = get_raw_args(attr);
@@ -243,7 +247,23 @@ fn fs_serial_core(
             panic!("Expected 0-2 arguments, got {}: {:?}", n, raw_args);
         }
     }
+    args
+}
+
+fn fs_serial_core(
+    attr: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let args = fs_args(attr);
     serial_setup(input, args, "fs")
+}
+
+fn fs_parallel_core(
+    attr: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let args = fs_args(attr);
+    parallel_setup(input, args, "fs")
 }
 
 fn core_setup<T>(
