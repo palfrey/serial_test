@@ -437,7 +437,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "document-features",
  "fslock",
@@ -452,7 +452,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test_derive"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "env_logger",
  "proc-macro-error",
@@ -465,7 +465,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test_test"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "actix-rt",
  "env_logger",
