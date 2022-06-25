@@ -28,7 +28,7 @@ default = ["logging"]
 
 logging = ["log"]
 
-## The file_locks feature unlocks the `file_serial` macro
+## The file_locks feature unlocks the `file_serial`/`file_parallel` macros
 file_locks = ["fslock"]
 
 docsrs = ["document-features"]

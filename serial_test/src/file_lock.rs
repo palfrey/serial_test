@@ -43,7 +43,7 @@ impl Lock {
         parallel_count
     }
 
-    pub(crate) fn lock(path: &str) -> Lock {
+    pub(crate) fn new(path: &str) -> Lock {
         if !Path::new(path).exists() {
             fs::write(path, "").unwrap_or_else(|_| panic!("Lock file path was {:?}", path))
         }
@@ -118,9 +118,9 @@ pub(crate) fn path_for_name(name: &str) -> String {
 
 pub(crate) fn make_lock_for_name_and_path(name: &str, path: Option<&str>) -> Lock {
     if let Some(opt_path) = path {
-        Lock::lock(opt_path)
+        Lock::new(opt_path)
     } else {
         let default_path = path_for_name(name);
-        Lock::lock(&default_path)
+        Lock::new(&default_path)
     }
 }

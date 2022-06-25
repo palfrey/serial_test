@@ -1,5 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![deny(unused_variables)]
+#![deny(missing_docs)]
 
 //! # serial_test
 //! `serial_test` allows for the creation of serialised Rust tests using the [serial](macro@serial) attribute
@@ -29,12 +30,12 @@
 //! neither attribute may run at any time and no guarantees are made about their timing!
 //!
 //! Note that if you're using an async test reactor attribute (e.g.
-//! `tokio::test` or `actix_rt::test`) then they should be listed *before* `serial`, otherwise we don't get an
+//! `tokio::test` or `actix_rt::test`) then they should be listed *before* [serial](macro@serial)/[parallel](macro@parallel), otherwise we don't get an
 //! async function and things break. There's now an error for this case to improve debugging.
 //!
 //! For cases like doctests and integration tests where the tests are run as separate processes, we also support
-//! [file_serial](macro@file_serial), with similar properties but based off file locking. Note that there are no
-//! guarantees about one test with [serial](macro@serial) and another with [file_serial](macro@file_serial)
+//! [file_serial](macro@file_serial)/[file_parallel](macro@file_parallel), with similar properties but based off file locking. Note that there are no
+//! guarantees about one test with [serial](macro@serial)/[parallel](macro@parallel) and another with [file_serial](macro@file_serial)/[file_parallel](macro@file_parallel)
 //! as they lock using different methods.
 //! ````
 //! #[test]

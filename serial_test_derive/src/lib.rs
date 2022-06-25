@@ -2,6 +2,7 @@
 //! Helper crate for [serial_test](../serial_test/index.html)
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![deny(missing_docs)]
 
 extern crate proc_macro;
 
@@ -94,7 +95,7 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// of tests as per [serial](macro@serial).
 ///
 /// Note that this has zero effect on [file_serial](macro@file_serial) tests, as that uses a different
-/// serialisation mechanism.
+/// serialisation mechanism. For that, you want [file_parallel](macro@file_parallel).
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
@@ -143,6 +144,44 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     fs_serial_core(attr.into(), input.into()).into()
 }
 
+/// Allows for the creation of file-serialised parallel Rust tests that won't clash with file-serialised serial tests
+/// ````
+/// #[test]
+/// #[file_serial]
+/// fn test_serial_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[file_parallel]
+/// fn test_parallel_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[file_parallel]
+/// fn test_parallel_two() {
+///   // Do things
+/// }
+/// ````
+/// Effectively, this should behave like [parallel](macro@parallel) but for [file_serial](macro@file_serial).
+/// Note that as per [file_serial](macro@file_serial) this doesn't do anything for [serial](macro@serial)/[parallel](macro@parallel) tests.
+/// 
+/// It also supports an optional `path` arg e.g
+/// ````
+/// #[test]
+/// #[file_parallel(key, "/tmp/foo")]
+/// fn test_parallel_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[file_parallel(key, "/tmp/foo")]
+/// fn test_parallel_another() {
+///   // Do things
+/// }
+/// ````
+/// Note that in this case you need to specify the `name` arg as well (as per [parallel](macro@parallel)). The path defaults to a reasonable temp directory for the OS if not specified.
 #[proc_macro_attribute]
 #[proc_macro_error]
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
