@@ -12,7 +12,7 @@ use std::{
 
 pub(crate) struct Lock {
     lockfile: LockFile,
-    parallel_count: u32,
+    pub(crate) parallel_count: u32,
     path: String,
 }
 

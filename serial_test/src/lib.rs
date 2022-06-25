@@ -80,7 +80,10 @@ pub use serial_file_lock::{
 };
 
 #[cfg(feature = "file_locks")]
-pub use parallel_file_lock::fs_parallel_core;
+pub use parallel_file_lock::{
+    fs_async_parallel_core, fs_async_parallel_core_with_return, fs_parallel_core,
+    fs_parallel_core_with_return,
+};
 
 // Re-export #[serial/parallel].
 pub use serial_test_derive::{parallel, serial};

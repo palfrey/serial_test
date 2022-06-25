@@ -310,4 +310,26 @@ mod tests {
         println!("Waiting lock 3");
         FS_THREAD_ORDERINGS.lock().push(false);
     }
+
+    #[cfg(feature = "file_locks")]
+    #[test]
+    #[file_parallel]
+    fn file_parallel_with_return() -> Result<(), ()> {
+        init();
+        Ok(())
+    }
+
+    #[cfg(feature = "file_locks")]
+    #[tokio::test]
+    #[file_parallel]
+    async fn file_parallel_with_async_return() -> Result<(), ()> {
+        Ok(())
+    }
+
+    #[cfg(feature = "file_locks")]
+    #[tokio::test]
+    #[file_parallel]
+    async fn file_parallel_with_async() {
+        init();
+    }
 }
