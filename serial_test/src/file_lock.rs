@@ -7,7 +7,7 @@ use std::{
     io::{Read, Write},
     path::Path,
     thread,
-    time::Duration
+    time::Duration,
 };
 
 pub(crate) struct Lock {
@@ -25,7 +25,7 @@ impl Lock {
     fn read_parallel_count(path: &str) -> u32 {
         let parallel_count = match File::open(Lock::gen_count_file(path)) {
             Ok(mut file) => {
-                let mut count_buf= [0; 4];
+                let mut count_buf = [0; 4];
                 match file.read_exact(&mut count_buf) {
                     Ok(_) => u32::from_ne_bytes(count_buf),
                     Err(err) => {
@@ -34,7 +34,7 @@ impl Lock {
                     }
                 }
             }
-            Err(_) => 0
+            Err(_) => 0,
         };
 
         #[cfg(feature = "logging")]
@@ -73,14 +73,14 @@ impl Lock {
             self.unlock();
             thread::sleep(Duration::from_secs(1));
             self.lockfile.lock().unwrap();
-            debug!("Locked for {:?}", self.path);            
+            debug!("Locked for {:?}", self.path);
             self.parallel_count = Lock::read_parallel_count(&self.path)
         }
     }
 
     fn unlock(self: &mut Lock) {
         debug!("Unlocking {}", self.path);
-        self.lockfile.unlock().unwrap();        
+        self.lockfile.unlock().unwrap();
     }
 
     pub(crate) fn end_serial(mut self: Lock) {

@@ -85,15 +85,14 @@ pub fn fs_test_fn(count: usize) {
 #[cfg(test)]
 mod tests {
     use super::{init, test_fn};
-    use serial_test::{parallel, serial};
-    use std::{thread, time::Duration};
     use lazy_static::lazy_static;
     use parking_lot::Mutex;
+    use serial_test::{parallel, serial};
     use std::{
-        sync::{
-            Arc, Barrier,
-        },
-    };    
+        sync::{Arc, Barrier},
+        thread,
+        time::Duration,
+    };
 
     lazy_static! {
         static ref THREAD_ORDERINGS: Arc<Mutex<Vec<bool>>> = Arc::new(Mutex::new(Vec::new()));
@@ -101,7 +100,6 @@ mod tests {
         static ref PARALLEL_BARRIER: Barrier = Barrier::new(3);
         static ref FS_PARALLEL_BARRIER: Barrier = Barrier::new(3);
     }
-
 
     #[cfg(feature = "file_locks")]
     use super::fs_test_fn;
@@ -275,7 +273,7 @@ mod tests {
         let count = FS_THREAD_ORDERINGS.lock().len();
         // Can't guarantee before or after the parallels
         assert!(count == 0 || count == 3, "count = {}", count);
-    }       
+    }
 
     #[cfg(feature = "file_locks")]
     #[test]
@@ -299,7 +297,7 @@ mod tests {
         FS_PARALLEL_BARRIER.wait();
         println!("Waiting lock 2");
         FS_THREAD_ORDERINGS.lock().push(false);
-    }    
+    }
 
     #[cfg(feature = "file_locks")]
     #[test]
@@ -311,5 +309,5 @@ mod tests {
         FS_PARALLEL_BARRIER.wait();
         println!("Waiting lock 3");
         FS_THREAD_ORDERINGS.lock().push(false);
-    }        
+    }
 }
