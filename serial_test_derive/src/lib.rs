@@ -166,7 +166,7 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// ````
 /// Effectively, this should behave like [parallel](macro@parallel) but for [file_serial](macro@file_serial).
 /// Note that as per [file_serial](macro@file_serial) this doesn't do anything for [serial](macro@serial)/[parallel](macro@parallel) tests.
-/// 
+///
 /// It also supports an optional `path` arg e.g
 /// ````
 /// #[test]
