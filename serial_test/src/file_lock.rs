@@ -85,7 +85,28 @@ pub async fn fs_async_serial_core(
     lock.unlock();
 }
 
-#[test]
-fn test_serial() {
-    fs_serial_core("test", None, || {});
+#[cfg(test)]
+mod tests {
+    use std::panic;
+
+    use fslock::LockFile;
+
+    use super::{fs_serial_core, path_for_name};
+
+    #[test]
+    fn test_serial() {
+        fs_serial_core("test", None, || {});
+    }
+
+    #[test]
+    fn unlock_on_assert_sync_without_return() {
+        let lock_path = path_for_name("unlock_on_assert_sync_without_return");
+        let _ = panic::catch_unwind(|| {
+            fs_serial_core("foo", Some(&lock_path), || {
+                assert!(false);
+            })
+        });
+        let mut lockfile = LockFile::open(&lock_path).unwrap();
+        assert!(lockfile.try_lock().unwrap());
+    }
 }
