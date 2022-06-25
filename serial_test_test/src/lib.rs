@@ -39,13 +39,12 @@
 //! ```
 
 use lazy_static::lazy_static;
-use parking_lot::Mutex;
 use std::{
     convert::TryInto,
     env, fs,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc, Barrier,
+        Arc,
     },
     thread,
     time::Duration,
@@ -53,8 +52,6 @@ use std::{
 
 lazy_static! {
     static ref LOCK: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));
-    static ref THREAD_ORDERINGS: Arc<Mutex<Vec<bool>>> = Arc::new(Mutex::new(Vec::new()));
-    static ref PARALLEL_BARRIER: Barrier = Barrier::new(3);
 }
 
 fn init() {
@@ -87,14 +84,27 @@ pub fn fs_test_fn(count: usize) {
 
 #[cfg(test)]
 mod tests {
-    use super::{init, test_fn, PARALLEL_BARRIER, THREAD_ORDERINGS};
+    use super::{init, test_fn};
+    use lazy_static::lazy_static;
+    use parking_lot::Mutex;
     use serial_test::{parallel, serial};
-    use std::{thread, time::Duration};
+    use std::{
+        sync::{Arc, Barrier},
+        thread,
+        time::Duration,
+    };
+
+    lazy_static! {
+        static ref THREAD_ORDERINGS: Arc<Mutex<Vec<bool>>> = Arc::new(Mutex::new(Vec::new()));
+        static ref FS_THREAD_ORDERINGS: Arc<Mutex<Vec<bool>>> = Arc::new(Mutex::new(Vec::new()));
+        static ref PARALLEL_BARRIER: Barrier = Barrier::new(3);
+        static ref FS_PARALLEL_BARRIER: Barrier = Barrier::new(3);
+    }
 
     #[cfg(feature = "file_locks")]
     use super::fs_test_fn;
     #[cfg(feature = "file_locks")]
-    use serial_test::file_serial;
+    use serial_test::{file_parallel, file_serial};
 
     #[test]
     #[serial]
@@ -245,5 +255,81 @@ mod tests {
         let count = THREAD_ORDERINGS.lock().len();
         // Can't guarantee before or after the parallels
         assert!(count == 0 || count == 3, "count = {}", count);
+    }
+
+    #[cfg(feature = "file_locks")]
+    #[test]
+    #[file_serial(ordering_key)]
+    fn file_serial_with_parallel_key_1() {
+        let count = FS_THREAD_ORDERINGS.lock().len();
+        // Can't guarantee before or after the parallels
+        assert!(count == 0 || count == 3, "count = {}", count);
+    }
+
+    #[cfg(feature = "file_locks")]
+    #[test]
+    #[file_serial(ordering_key)]
+    fn file_serial_with_parallel_key_2() {
+        let count = FS_THREAD_ORDERINGS.lock().len();
+        // Can't guarantee before or after the parallels
+        assert!(count == 0 || count == 3, "count = {}", count);
+    }
+
+    #[cfg(feature = "file_locks")]
+    #[test]
+    #[file_parallel(ordering_key)]
+    fn file_parallel_with_key_1() {
+        init();
+        thread::sleep(Duration::from_secs(1));
+        println!("Waiting barrier 1");
+        FS_PARALLEL_BARRIER.wait();
+        println!("Waiting lock 1");
+        FS_THREAD_ORDERINGS.lock().push(false);
+    }
+
+    #[cfg(feature = "file_locks")]
+    #[test]
+    #[file_parallel(ordering_key)]
+    fn file_parallel_with_key_2() {
+        init();
+        thread::sleep(Duration::from_secs(1));
+        println!("Waiting barrier 2");
+        FS_PARALLEL_BARRIER.wait();
+        println!("Waiting lock 2");
+        FS_THREAD_ORDERINGS.lock().push(false);
+    }
+
+    #[cfg(feature = "file_locks")]
+    #[test]
+    #[file_parallel(ordering_key)]
+    fn file_parallel_with_key_3() {
+        init();
+        thread::sleep(Duration::from_secs(1));
+        println!("Waiting barrier 3");
+        FS_PARALLEL_BARRIER.wait();
+        println!("Waiting lock 3");
+        FS_THREAD_ORDERINGS.lock().push(false);
+    }
+
+    #[cfg(feature = "file_locks")]
+    #[test]
+    #[file_parallel]
+    fn file_parallel_with_return() -> Result<(), ()> {
+        init();
+        Ok(())
+    }
+
+    #[cfg(feature = "file_locks")]
+    #[tokio::test]
+    #[file_parallel]
+    async fn file_parallel_with_async_return() -> Result<(), ()> {
+        Ok(())
+    }
+
+    #[cfg(feature = "file_locks")]
+    #[tokio::test]
+    #[file_parallel]
+    async fn file_parallel_with_async() {
+        init();
     }
 }

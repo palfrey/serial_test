@@ -2,6 +2,7 @@
 //! Helper crate for [serial_test](../serial_test/index.html)
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![deny(missing_docs)]
 
 extern crate proc_macro;
 
@@ -94,7 +95,7 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// of tests as per [serial](macro@serial).
 ///
 /// Note that this has zero effect on [file_serial](macro@file_serial) tests, as that uses a different
-/// serialisation mechanism.
+/// serialisation mechanism. For that, you want [file_parallel](macro@file_parallel).
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
@@ -141,6 +142,51 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     fs_serial_core(attr.into(), input.into()).into()
+}
+
+/// Allows for the creation of file-serialised parallel Rust tests that won't clash with file-serialised serial tests
+/// ````
+/// #[test]
+/// #[file_serial]
+/// fn test_serial_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[file_parallel]
+/// fn test_parallel_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[file_parallel]
+/// fn test_parallel_two() {
+///   // Do things
+/// }
+/// ````
+/// Effectively, this should behave like [parallel](macro@parallel) but for [file_serial](macro@file_serial).
+/// Note that as per [file_serial](macro@file_serial) this doesn't do anything for [serial](macro@serial)/[parallel](macro@parallel) tests.
+///
+/// It also supports an optional `path` arg e.g
+/// ````
+/// #[test]
+/// #[file_parallel(key, "/tmp/foo")]
+/// fn test_parallel_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[file_parallel(key, "/tmp/foo")]
+/// fn test_parallel_another() {
+///   // Do things
+/// }
+/// ````
+/// Note that in this case you need to specify the `name` arg as well (as per [parallel](macro@parallel)). The path defaults to a reasonable temp directory for the OS if not specified.
+#[proc_macro_attribute]
+#[proc_macro_error]
+#[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
+pub fn file_parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
+    fs_parallel_core(attr.into(), input.into()).into()
 }
 
 // Based off of https://github.com/dtolnay/quote/issues/20#issuecomment-437341743
@@ -217,10 +263,7 @@ fn local_parallel_core(
     parallel_setup(input, vec![Box::new(key)], "local")
 }
 
-fn fs_serial_core(
-    attr: proc_macro2::TokenStream,
-    input: proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
+fn fs_args(attr: proc_macro2::TokenStream) -> Vec<Box<dyn ToTokens>> {
     let none_ident = Box::new(format_ident!("None"));
     let mut args: Vec<Box<dyn quote::ToTokens>> = Vec::new();
     let mut raw_args = get_raw_args(attr);
@@ -243,7 +286,23 @@ fn fs_serial_core(
             panic!("Expected 0-2 arguments, got {}: {:?}", n, raw_args);
         }
     }
+    args
+}
+
+fn fs_serial_core(
+    attr: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let args = fs_args(attr);
     serial_setup(input, args, "fs")
+}
+
+fn fs_parallel_core(
+    attr: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let args = fs_args(attr);
+    parallel_setup(input, args, "fs")
 }
 
 fn core_setup<T>(
