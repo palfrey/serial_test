@@ -1,13 +1,15 @@
 #![allow(clippy::await_holding_lock)]
 
 use crate::code_lock::{check_new_key, LOCKS};
+use std::time::Duration;
 
 #[doc(hidden)]
 pub fn local_serial_core_with_return<E>(
     name: &str,
+    max_wait: Option<Duration>,
     function: fn() -> Result<(), E>,
 ) -> Result<(), E> {
-    check_new_key(name);
+    check_new_key(name, max_wait);
 
     let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
@@ -16,8 +18,8 @@ pub fn local_serial_core_with_return<E>(
 }
 
 #[doc(hidden)]
-pub fn local_serial_core(name: &str, function: fn()) {
-    check_new_key(name);
+pub fn local_serial_core(name: &str, max_wait: Option<Duration>, function: fn()) {
+    check_new_key(name, max_wait);
 
     let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
@@ -28,9 +30,10 @@ pub fn local_serial_core(name: &str, function: fn()) {
 #[doc(hidden)]
 pub async fn local_async_serial_core_with_return<E>(
     name: &str,
+    max_wait: Option<Duration>,
     fut: impl std::future::Future<Output = Result<(), E>>,
 ) -> Result<(), E> {
-    check_new_key(name);
+    check_new_key(name, max_wait);
 
     let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
@@ -39,8 +42,12 @@ pub async fn local_async_serial_core_with_return<E>(
 }
 
 #[doc(hidden)]
-pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<Output = ()>) {
-    check_new_key(name);
+pub async fn local_async_serial_core(
+    name: &str,
+    max_wait: Option<Duration>,
+    fut: impl std::future::Future<Output = ()>,
+) {
+    check_new_key(name, max_wait);
 
     let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
@@ -76,7 +83,7 @@ mod tests {
             let c = barrier.clone();
             threads.push(thread::spawn(move || {
                 c.wait();
-                check_new_key("foo");
+                check_new_key("foo", None);
                 {
                     let unlock = local_locks.get("foo").expect("read didn't work");
                     let mutex = unlock.value();
@@ -104,7 +111,7 @@ mod tests {
     #[test]
     fn unlock_on_assert() {
         let _ = std::panic::catch_unwind(|| {
-            local_serial_core("assert", || {
+            local_serial_core("assert", None, || {
                 assert!(false);
             })
         });
