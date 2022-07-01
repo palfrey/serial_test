@@ -35,7 +35,7 @@ logging = ["log"]
 file_locks = ["fslock"]
 
 ## The `timeout` feature lets tests time out after a certain amount of time
-## if not enabled tests will wait indefinetly to be started
+## if not enabled tests will wait indefinitely to be started
 timeout = []
 
 docsrs = ["document-features"]
