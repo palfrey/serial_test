@@ -213,7 +213,7 @@ fn get_raw_args(attr: proc_macro2::TokenStream) -> Vec<Arg> {
         match attrs.remove(0) {
             TokenTree::Ident(id) => {
                 let name = id.to_string();
-                if name == "timeout" {
+                if name == "timeout_ms" {
                     match attrs.first() {
                         Some(TokenTree::Punct(p)) if p.as_char() == '=' && !attrs.is_empty() => {
                             attrs.remove(0);
