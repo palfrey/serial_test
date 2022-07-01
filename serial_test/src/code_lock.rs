@@ -2,13 +2,14 @@ use crate::rwlock::{Locks, MutexGuardWrapper};
 use lazy_static::lazy_static;
 #[cfg(feature = "logging")]
 use log::debug;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::RwLock;
+#[cfg(feature = "timeout")]
+use std::time::Instant;
 use std::{
-    cell::RefCell,
     collections::HashMap,
     ops::{Deref, DerefMut},
     sync::{atomic::AtomicU32, Arc},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 pub(crate) struct UniqueReentrantMutex {
@@ -46,9 +47,12 @@ impl UniqueReentrantMutex {
 lazy_static! {
     pub(crate) static ref LOCKS: Arc<RwLock<HashMap<String, UniqueReentrantMutex>>> =
         Arc::new(RwLock::new(HashMap::new()));
-    static ref MAX_WAIT: Arc<Mutex<RefCell<Duration>>> =
-        Arc::new(Mutex::new(RefCell::new(Duration::from_secs(60))));
     static ref MUTEX_ID: Arc<AtomicU32> = Arc::new(AtomicU32::new(1));
+}
+
+#[cfg(feature = "timeout")]
+lazy_static! {
+    static ref MAX_WAIT: Arc<RwLock<Duration>> = Arc::new(RwLock::new(Duration::from_secs(60)));
 }
 
 impl Default for UniqueReentrantMutex {
@@ -67,20 +71,25 @@ impl Default for UniqueReentrantMutex {
 ///
 /// However, sometimes if you've got a *lot* of serial tests it might theoretically not be enough,
 /// hence this method.
+///
+/// This function is only available when the `timeout` feature is enabled.
+#[cfg(feature = "timeout")]
 pub fn set_max_wait(max_wait: Duration) {
-    MAX_WAIT.lock().replace(max_wait);
+    *MAX_WAIT.write() = max_wait;
 }
 
+#[cfg(feature = "timeout")]
 pub(crate) fn wait_duration() -> Duration {
-    *MAX_WAIT.lock().borrow()
+    *MAX_WAIT.read()
 }
 
 pub(crate) fn check_new_key(name: &str) {
+    #[cfg(feature = "timeout")]
     let start = Instant::now();
     loop {
-        #[cfg(feature = "logging")]
+        #[cfg(all(feature = "logging", feature = "timeout"))]
         {
-            let duration = Instant::now() - start;
+            let duration = start.elapsed();
             debug!("Waiting for '{}' {:?}", name, duration);
         }
         // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
@@ -105,9 +114,12 @@ pub(crate) fn check_new_key(name: &str) {
         // If the try_lock fails, then go around the loop again
         // Odds are another test was also locking on the write and has now written the key
 
-        let duration = Instant::now() - start;
-        if duration >= wait_duration() {
-            panic!("check_new_key timed out!");
+        #[cfg(feature = "timeout")]
+        {
+            let duration = start.elapsed();
+            if duration > wait_duration() {
+                panic!("Timeout waiting for '{}' {:?}", name, duration);
+            }
         }
     }
 }

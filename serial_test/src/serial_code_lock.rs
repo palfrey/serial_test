@@ -53,13 +53,14 @@ pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<O
 #[allow(clippy::print_stdout)]
 mod tests {
     use super::local_serial_core;
-    use crate::code_lock::{check_new_key, wait_duration, LOCKS};
+    use crate::code_lock::{check_new_key, LOCKS};
     use itertools::Itertools;
     use parking_lot::RwLock;
     use std::{
         ops::Deref,
         sync::{Arc, Barrier},
         thread,
+        time::Duration,
     };
 
     #[test]
@@ -79,12 +80,12 @@ mod tests {
                 check_new_key("foo");
                 {
                     let unlock = local_locks
-                        .try_read_recursive_for(wait_duration())
+                        .try_read_recursive_for(Duration::from_secs(1))
                         .expect("read lock didn't work");
                     let mutex = unlock.deref().get("foo").unwrap();
 
                     let mut ptr_guard = local_ptrs
-                        .try_write_for(wait_duration())
+                        .try_write_for(Duration::from_secs(1))
                         .expect("write lock didn't work");
                     ptr_guard.push(mutex.id);
                 }
@@ -96,7 +97,7 @@ mod tests {
             thread.join().expect("thread join worked");
         }
         let ptrs_read_lock = ptrs
-            .try_read_recursive_for(wait_duration())
+            .try_read_recursive_for(Duration::from_secs(1))
             .expect("ptrs read work");
         assert_eq!(ptrs_read_lock.len(), count);
         println!("{:?}", ptrs_read_lock);
