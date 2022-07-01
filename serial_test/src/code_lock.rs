@@ -3,11 +3,13 @@ use lazy_static::lazy_static;
 #[cfg(feature = "logging")]
 use log::debug;
 use parking_lot::RwLock;
+#[cfg(feature = "timeout")]
+use std::time::Instant;
 use std::{
     collections::HashMap,
     ops::{Deref, DerefMut},
     sync::{atomic::AtomicU32, Arc},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 pub(crate) struct UniqueReentrantMutex {
@@ -76,11 +78,13 @@ pub fn set_max_wait(max_wait: Duration) {
     *MAX_WAIT.write() = max_wait;
 }
 
+#[cfg(feature = "timeout")]
 pub(crate) fn wait_duration() -> Duration {
     *MAX_WAIT.read()
 }
 
 pub(crate) fn check_new_key(name: &str) {
+    #[cfg(feature = "timeout")]
     let start = Instant::now();
     loop {
         #[cfg(all(feature = "logging", feature = "timeout"))]
