@@ -27,17 +27,13 @@ itertools = "0.10"
 tokio = { version = "^1.17", features = ["macros", "rt"] }
 
 [features]
-default = ["logging", "timeout"]
+default = ["logging"]
 
 ## Switches on debug logging (and requires the `log` package)
 logging = ["log"]
 
 ## The file_locks feature unlocks the `file_serial`/`file_parallel` macros
 file_locks = ["fslock"]
-
-## The `timeout` feature lets tests time out after a certain amount of time
-## if not enabled tests will wait indefinitely to be started
-timeout = []
 
 docsrs = ["document-features"]
 

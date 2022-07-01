@@ -1,13 +1,10 @@
 use crate::rwlock::{Locks, MutexGuardWrapper};
 use dashmap::{try_result::TryResult, DashMap};
 use lazy_static::lazy_static;
-#[cfg(all(feature = "logging", feature = "timeout"))]
+#[cfg(all(feature = "logging"))]
 use log::debug;
-#[cfg(feature = "timeout")]
 use std::sync::{atomic::AtomicU32, Arc};
-#[cfg(feature = "timeout")]
 use std::time::Duration;
-#[cfg(feature = "timeout")]
 use std::time::Instant;
 
 pub(crate) struct UniqueReentrantMutex {
@@ -60,7 +57,7 @@ impl Default for UniqueReentrantMutex {
 pub(crate) fn check_new_key(name: &str, max_wait: Option<Duration>) {
     let start = Instant::now();
     loop {
-        #[cfg(all(feature = "logging", feature = "timeout"))]
+        #[cfg(all(feature = "logging"))]
         {
             let duration = start.elapsed();
             debug!("Waiting for '{}' {:?}", name, duration);
@@ -87,7 +84,6 @@ pub(crate) fn check_new_key(name: &str, max_wait: Option<Duration>) {
         // If the try_entry fails, then go around the loop again
         // Odds are another test was also locking on the write and has now written the key
 
-        #[cfg(feature = "timeout")]
         if let Some(max_wait) = max_wait {
             let duration = start.elapsed();
             if duration > max_wait {
