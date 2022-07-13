@@ -309,6 +309,9 @@ fn local_parallel_core(
 
 fn fs_args(attr: proc_macro2::TokenStream) -> Vec<Box<dyn ToTokens>> {
     let config = get_core_key(attr);
+    if config.timeout.is_some() {
+        panic!("Timeout is not supported for file_serial");
+    }
     vec![
         Box::new(config.name),
         Box::new(QuoteOption(config.timeout)),
