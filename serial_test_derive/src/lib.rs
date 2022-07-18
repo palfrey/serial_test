@@ -33,6 +33,7 @@ use std::ops::Deref;
 /// If you want different subsets of tests to be serialised with each
 /// other, but not depend on other subsets, you can add an argument to [serial](macro@serial), and all calls
 /// with identical arguments will be called in serial. e.g.
+///
 /// ````
 /// #[test]
 /// #[serial(something)]
@@ -60,6 +61,24 @@ use std::ops::Deref;
 /// ````
 /// `test_serial_one` and `test_serial_another` will be executed in serial, as will `test_serial_third` and `test_serial_fourth`
 /// but neither sequence will be blocked by the other
+///
+/// For each test, a timeout can be specified with the `timeout_ms` parameter to the [serial](macro@serial) attribute. Note that
+/// the timeout is counted from the first invocation of the test, not from the time the previous test was completed. This can
+/// lead to some unpredictable behavior based on the number of parallel tests run on the system.
+///
+/// ````
+/// #[test]
+/// #[serial(timeout_ms = 1000)]
+/// fn test_serial_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[serial(timeout_ms = 1000)]
+/// fn test_serial_another() {
+///   // Do things
+/// }
+/// ````
 ///
 /// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) are supported
 #[proc_macro_attribute]
