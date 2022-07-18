@@ -476,6 +476,55 @@ mod tests {
     }
 
     #[test]
+    fn test_serial_with_timeout() {
+        let attrs = vec![
+            TokenTree::Ident(format_ident!("timeout_ms")),
+            TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+            TokenTree::Literal(Literal::u8_unsuffixed(42)),
+        ];
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                serial_test::local_serial_core("",  :: std :: option :: Option :: Some (42u64), || {} );
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
+
+    #[test]
+    fn test_serial_with_name_and_timeout() {
+        let attrs = vec![
+            TokenTree::Ident(format_ident!("foo")),
+            TokenTree::Punct(Punct::new(',', Spacing::Alone)),
+            TokenTree::Ident(format_ident!("timeout_ms")),
+            TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+            TokenTree::Literal(Literal::u8_unsuffixed(42)),
+        ];
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                serial_test::local_serial_core("foo",  :: std :: option :: Option :: Some (42u64), || {} );
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
+    #[test]
     fn test_stripped_attributes() {
         let _ = env_logger::builder().is_test(true).try_init();
         let attrs = proc_macro2::TokenStream::new();
