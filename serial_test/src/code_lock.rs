@@ -51,7 +51,7 @@ lazy_static! {
 
 #[cfg(feature = "timeout")]
 lazy_static! {
-    static ref MAX_WAIT: Arc<RwLock<Duration>> = Arc::new(RwLock::new(Duration::from_secs(10)));
+    static ref MAX_WAIT: Arc<RwLock<Duration>> = Arc::new(RwLock::new(Duration::from_secs(60)));
 }
 
 impl Default for UniqueReentrantMutex {
