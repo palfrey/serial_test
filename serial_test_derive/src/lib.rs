@@ -311,8 +311,12 @@ fn local_serial_core(
     input: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     let config = get_core_key(attr);
-    let args: Vec<Box<dyn ToTokens>> =
-        vec![Box::new(config.name), Box::new(QuoteOption(config.timeout))];
+    let timeout = if let Some(t) = config.timeout {
+        quote! { ::std::option::Option::Some(::std::time::Duration::from_millis(#t)) }
+    } else {
+        quote! { ::std::option::Option::None }
+    };
+    let args: Vec<Box<dyn ToTokens>> = vec![Box::new(config.name), Box::new(timeout)];
     serial_setup(input, args, "local")
 }
 
@@ -321,19 +325,26 @@ fn local_parallel_core(
     input: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     let config = get_core_key(attr);
-    let args: Vec<Box<dyn ToTokens>> =
-        vec![Box::new(config.name), Box::new(QuoteOption(config.timeout))];
+    let timeout = if let Some(t) = config.timeout {
+        quote! { Some(::std::time::Duration::from_millis(#t)) }
+    } else {
+        quote! { None }
+    };
+    let args: Vec<Box<dyn ToTokens>> = vec![Box::new(config.name), Box::new(timeout)];
     parallel_setup(input, args, "local")
 }
 
 fn fs_args(attr: proc_macro2::TokenStream) -> Vec<Box<dyn ToTokens>> {
     let config = get_core_key(attr);
-    if config.timeout.is_some() {
+    let timeout = if let Some(_t) = config.timeout {
         panic!("Timeout is not supported for file_serial");
-    }
+        // quote! { ::std::option::Option::Some(::std::time::Duration::from_millis(#t)) }
+    } else {
+        quote! { ::std::option::Option::None }
+    };
     vec![
         Box::new(config.name),
-        Box::new(QuoteOption(config.timeout)),
+        Box::new(timeout),
         if let Some(path) = config.path {
             Box::new(QuoteOption(Some(path)))
         } else {
@@ -512,7 +523,7 @@ mod tests {
         let compare = quote! {
             #[test]
             fn foo () {
-                serial_test::local_serial_core("",  :: std :: option :: Option :: Some (42u64), || {} );
+                serial_test::local_serial_core("",  :: std :: option :: Option :: Some (::std::time::Duration::from_millis(42u64)), || {} );
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -538,7 +549,7 @@ mod tests {
         let compare = quote! {
             #[test]
             fn foo () {
-                serial_test::local_serial_core("foo",  :: std :: option :: Option :: Some (42u64), || {} );
+                serial_test::local_serial_core("foo",  :: std :: option :: Option :: Some (::std::time::Duration::from_millis(42u64)), || {} );
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
