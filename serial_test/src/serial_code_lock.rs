@@ -1,7 +1,6 @@
 #![allow(clippy::await_holding_lock)]
 
 use crate::code_lock::{check_new_key, LOCKS};
-use std::ops::Deref;
 
 #[doc(hidden)]
 pub fn local_serial_core_with_return<E>(
@@ -10,9 +9,9 @@ pub fn local_serial_core_with_return<E>(
 ) -> Result<(), E> {
     check_new_key(name);
 
-    let unlock = LOCKS.read_recursive();
+    let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.deref()[name].lock();
+    let _guard = unlock.lock();
     function()
 }
 
@@ -20,9 +19,9 @@ pub fn local_serial_core_with_return<E>(
 pub fn local_serial_core(name: &str, function: fn()) {
     check_new_key(name);
 
-    let unlock = LOCKS.read_recursive();
+    let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.deref()[name].lock();
+    let _guard = unlock.lock();
     function();
 }
 
@@ -33,9 +32,9 @@ pub async fn local_async_serial_core_with_return<E>(
 ) -> Result<(), E> {
     check_new_key(name);
 
-    let unlock = LOCKS.read_recursive();
+    let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.deref()[name].lock();
+    let _guard = unlock.lock();
     fut.await
 }
 
@@ -43,9 +42,10 @@ pub async fn local_async_serial_core_with_return<E>(
 pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<Output = ()>) {
     check_new_key(name);
 
-    let unlock = LOCKS.read_recursive();
+    let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.deref()[name].lock();
+    let _guard = unlock.lock();
+
     fut.await;
 }
 
@@ -57,7 +57,6 @@ mod tests {
     use itertools::Itertools;
     use parking_lot::RwLock;
     use std::{
-        ops::Deref,
         sync::{Arc, Barrier},
         thread,
         time::Duration,
@@ -79,10 +78,8 @@ mod tests {
                 c.wait();
                 check_new_key("foo");
                 {
-                    let unlock = local_locks
-                        .try_read_recursive_for(Duration::from_secs(1))
-                        .expect("read lock didn't work");
-                    let mutex = unlock.deref().get("foo").unwrap();
+                    let unlock = local_locks.get("foo").expect("read didn't work");
+                    let mutex = unlock.value();
 
                     let mut ptr_guard = local_ptrs
                         .try_write_for(Duration::from_secs(1))
@@ -111,7 +108,6 @@ mod tests {
                 assert!(false);
             })
         });
-        let unlock = LOCKS.read_recursive();
-        assert!(!unlock.deref()["assert"].is_locked());
+        assert!(!LOCKS.get("assert").unwrap().is_locked());
     }
 }
