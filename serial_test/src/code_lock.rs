@@ -3,13 +3,13 @@ use dashmap::{try_result::TryResult, DashMap};
 use lazy_static::lazy_static;
 #[cfg(feature = "logging")]
 use log::debug;
+#[cfg(feature = "timeout")]
 use parking_lot::RwLock;
+use std::sync::{atomic::AtomicU32, Arc};
+#[cfg(feature = "timeout")]
+use std::time::Duration;
 #[cfg(feature = "timeout")]
 use std::time::Instant;
-use std::{
-    sync::{atomic::AtomicU32, Arc},
-    time::Duration,
-};
 
 pub(crate) struct UniqueReentrantMutex {
     locks: Locks,
