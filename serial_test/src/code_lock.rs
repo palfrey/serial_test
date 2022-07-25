@@ -3,9 +3,10 @@ use dashmap::{try_result::TryResult, DashMap};
 use lazy_static::lazy_static;
 #[cfg(all(feature = "logging"))]
 use log::debug;
-use std::sync::{atomic::AtomicU32, Arc};
-use std::time::Duration;
-use std::time::Instant;
+use std::{
+    sync::{atomic::AtomicU32, Arc},
+    time::{Duration, Instant},
+};
 
 pub(crate) struct UniqueReentrantMutex {
     locks: Locks,
