@@ -1,7 +1,7 @@
 use crate::rwlock::{Locks, MutexGuardWrapper};
 use dashmap::{try_result::TryResult, DashMap};
 use lazy_static::lazy_static;
-#[cfg(feature = "logging")]
+#[cfg(all(feature = "logging", feature = "timeout"))]
 use log::debug;
 #[cfg(feature = "timeout")]
 use parking_lot::RwLock;

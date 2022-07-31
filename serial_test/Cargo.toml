@@ -46,3 +46,7 @@ docsrs = ["document-features"]
 all-features = true
 # defines the configuration attribute `docsrs`
 rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.cargo-all-features]
+skip_optional_dependencies = true
+denylist = ["docsrs"]
