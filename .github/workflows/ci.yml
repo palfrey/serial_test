@@ -38,6 +38,7 @@ jobs:
           curl --location --remote-name https://github.com/ryankurte/cargo-binstall/releases/download/v0.11.1/cargo-binstall-x86_64-unknown-linux-musl.tgz
           tar -zxvf cargo-binstall-x86_64-unknown-linux-musl.tgz
           mv cargo-binstall ~/.cargo/bin
+          ls -l ~/.cargo/bin
       - name: Clippy
         uses: actions-rs/cargo@v1.0.3
         env:
@@ -48,7 +49,7 @@ jobs:
       - name: Install "build all features"
         uses: actions-rs/cargo@v1.0.3
         with:
-          command: binstall cargo-all-featutres --no-confirm --version 1.7.0
+          command: binstall cargo-all-features --no-confirm --version 1.7.0
       - name: Build all features
         uses: actions-rs/cargo@v1.0.3
         with:
