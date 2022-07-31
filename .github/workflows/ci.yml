@@ -19,13 +19,6 @@ jobs:
           - beta
           - nightly
           - 1.51.0
-        features:
-          - default
-          - no_defaults
-          - file_locks
-        include:
-        - rust: nightly
-          features: all
     steps:
       - uses: actions/checkout@v2.3.4
       - uses: actions-rs/toolchain@v1.0.7
@@ -40,42 +33,34 @@ jobs:
         with:
           command: fmt
           args: -- --check
-        if: ${{ matrix.features == 'default' && matrix.rust == 'nightly' }}
+        if: ${{ matrix.rust == 'nightly' }}
       - name: Clippy
         uses: actions-rs/cargo@v1.0.3
         env:
           RUSTFLAGS: -Dwarnings
         with:
           command: clippy
-        if: ${{ matrix.features == 'default' }}
         continue-on-error: ${{ matrix.rust == 'nightly' || matrix.rust == 'beta' }}
-      - name: Build and test feature ${{ matrix.features }}
+      - uses: engineerd/configurator@v0.0.8
+        with:
+          name: cargo-binstall
+          url: https://github.com/ryankurte/cargo-binstall/releases/download/v0.11.1/cargo-binstall-x86_64-unknown-linux-musl.tgz
+          pathInArchive: cargo-binstall
+      - name: Install "build all features"
         uses: actions-rs/cargo@v1.0.3
         with:
-          command: test
-          args: --features ${{ matrix.features }} -- --nocapture
+          command: binstall cargo-all-featutres --no-confirm --version 1.7.0
+      - name: Build all features
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: build-all-features
+      - name: Test all features
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: test-all-features          
         env:
           RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
           RUST_LOG: debug
-        if: ${{ matrix.features != 'all' && matrix.features != 'no_defaults' }}
-      - name: Build and test all features
-        uses: actions-rs/cargo@v1.0.3
-        with:
-          command: test
-          args: --all-features -- --nocapture
-        if: ${{ matrix.features == 'all' }}
-        env:
-          RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
-          RUST_LOG: debug
-      - name: Build and test without default features
-        uses: actions-rs/cargo@v1.0.3
-        with:
-          command: test
-          args: --no-default-features -- --nocapture
-        if: ${{ matrix.features == 'no_defaults' }}
-        env:
-          RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
-          RUST_LOG: debug          
 
   multi-os-testing:
     name: Test suite
