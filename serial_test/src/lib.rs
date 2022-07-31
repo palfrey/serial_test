@@ -1,6 +1,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![deny(unused_variables)]
 #![deny(missing_docs)]
+#![deny(unused_imports)]
 
 //! # serial_test
 //! `serial_test` allows for the creation of serialised Rust tests using the [serial](macro@serial) attribute
