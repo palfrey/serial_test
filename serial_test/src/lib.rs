@@ -65,14 +65,16 @@ mod serial_file_lock;
 
 #[cfg(feature = "timeout")]
 pub use code_lock::set_max_wait;
-pub use parallel_code_lock::{
-    local_async_parallel_core, local_async_parallel_core_with_return, local_parallel_core,
-    local_parallel_core_with_return,
-};
-pub use serial_code_lock::{
-    local_async_serial_core, local_async_serial_core_with_return, local_serial_core,
-    local_serial_core_with_return,
-};
+
+#[cfg(feature = "async")]
+pub use parallel_code_lock::{local_async_parallel_core, local_async_parallel_core_with_return};
+
+pub use parallel_code_lock::{local_parallel_core, local_parallel_core_with_return};
+
+#[cfg(feature = "async")]
+pub use serial_code_lock::{local_async_serial_core, local_async_serial_core_with_return};
+
+pub use serial_code_lock::{local_serial_core, local_serial_core_with_return};
 
 #[cfg(feature = "file_locks")]
 pub use serial_file_lock::{

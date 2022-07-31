@@ -1,5 +1,6 @@
 use std::panic;
 
+#[cfg(feature = "async")]
 use futures::FutureExt;
 
 use crate::file_lock::make_lock_for_name_and_path;
@@ -34,6 +35,7 @@ pub fn fs_parallel_core_with_return<E>(
 }
 
 #[doc(hidden)]
+#[cfg(feature = "async")]
 pub async fn fs_async_parallel_core_with_return<E>(
     name: &str,
     path: Option<&str>,
@@ -51,6 +53,7 @@ pub async fn fs_async_parallel_core_with_return<E>(
 }
 
 #[doc(hidden)]
+#[cfg(feature = "async")]
 pub async fn fs_async_parallel_core(
     name: &str,
     path: Option<&str>,
@@ -66,10 +69,12 @@ pub async fn fs_async_parallel_core(
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "async")]
+    use crate::{fs_async_parallel_core, fs_async_parallel_core_with_return};
+
     use crate::{
         file_lock::{path_for_name, Lock},
-        fs_async_parallel_core, fs_async_parallel_core_with_return, fs_parallel_core,
-        fs_parallel_core_with_return,
+        fs_parallel_core, fs_parallel_core_with_return,
     };
     use std::{io::Error, panic};
 
@@ -110,6 +115,8 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "async")]
+
     async fn unlock_on_assert_async_without_return() {
         let lock_path = path_for_name("unlock_on_assert_async_without_return");
         async fn demo_assert() {
@@ -134,6 +141,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "async")]
     async fn unlock_on_assert_async_with_return() {
         let lock_path = path_for_name("unlock_on_assert_async_with_return");
 

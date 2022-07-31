@@ -1,6 +1,7 @@
 #![allow(clippy::await_holding_lock)]
 
 use crate::code_lock::{check_new_key, LOCKS};
+#[cfg(feature = "async")]
 use futures::FutureExt;
 use std::{ops::Deref, panic};
 
@@ -39,6 +40,7 @@ pub fn local_parallel_core(name: &str, function: fn()) {
 }
 
 #[doc(hidden)]
+#[cfg(feature = "async")]
 pub async fn local_async_parallel_core_with_return<E>(
     name: &str,
     fut: impl std::future::Future<Output = Result<(), E>> + panic::UnwindSafe,
@@ -58,6 +60,7 @@ pub async fn local_async_parallel_core_with_return<E>(
 }
 
 #[doc(hidden)]
+#[cfg(feature = "async")]
 pub async fn local_async_parallel_core(
     name: &str,
     fut: impl std::future::Future<Output = ()> + panic::UnwindSafe,
@@ -75,10 +78,10 @@ pub async fn local_async_parallel_core(
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        code_lock::LOCKS, local_async_parallel_core, local_async_parallel_core_with_return,
-        local_parallel_core, local_parallel_core_with_return,
-    };
+    #[cfg(feature = "async")]
+    use crate::{local_async_parallel_core, local_async_parallel_core_with_return};
+
+    use crate::{code_lock::LOCKS, local_parallel_core, local_parallel_core_with_return};
     use std::{io::Error, ops::Deref, panic};
 
     #[test]
@@ -114,6 +117,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "async")]
     async fn unlock_on_assert_async_without_return() {
         async fn demo_assert() {
             assert!(false);
@@ -135,6 +139,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "async")]
     async fn unlock_on_assert_async_with_return() {
         async fn demo_assert() -> Result<(), Error> {
             assert!(false);

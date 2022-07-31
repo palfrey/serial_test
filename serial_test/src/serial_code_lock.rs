@@ -27,6 +27,7 @@ pub fn local_serial_core(name: &str, function: fn()) {
 }
 
 #[doc(hidden)]
+#[cfg(feature = "async")]
 pub async fn local_async_serial_core_with_return<E>(
     name: &str,
     fut: impl std::future::Future<Output = Result<(), E>>,
@@ -40,6 +41,7 @@ pub async fn local_async_serial_core_with_return<E>(
 }
 
 #[doc(hidden)]
+#[cfg(feature = "async")]
 pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<Output = ()>) {
     check_new_key(name);
 
