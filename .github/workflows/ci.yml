@@ -34,11 +34,6 @@ jobs:
           command: fmt
           args: -- --check
         if: ${{ matrix.rust == 'nightly' }}
-      - run: |
-          curl --location --remote-name https://github.com/ryankurte/cargo-binstall/releases/download/v0.11.1/cargo-binstall-x86_64-unknown-linux-musl.tgz
-          tar -zxvf cargo-binstall-x86_64-unknown-linux-musl.tgz
-          mv cargo-binstall ~/.cargo/bin
-          ls -l ~/.cargo/bin
       - name: Clippy
         uses: actions-rs/cargo@v1.0.3
         env:
@@ -46,6 +41,12 @@ jobs:
         with:
           command: clippy
         continue-on-error: ${{ matrix.rust == 'nightly' || matrix.rust == 'beta' }}
+      - name: Install cargo-binstall
+        run: |
+          curl --location --remote-name https://github.com/ryankurte/cargo-binstall/releases/download/v0.11.1/cargo-binstall-x86_64-unknown-linux-musl.tgz
+          tar -zxvf cargo-binstall-x86_64-unknown-linux-musl.tgz
+          mv cargo-binstall ~/.cargo/bin
+          ls -l ~/.cargo/bin
       - name: Install "build all features"
         uses: actions-rs/cargo@v1.0.3
         with:
