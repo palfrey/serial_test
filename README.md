@@ -53,3 +53,19 @@ extern crate serial_test;
 for earlier versions.
 
 You can then either add `#[serial]` or `#[serial(some_text)]` to tests as required.
+
+For each test, a timeout can be specified with the `timeout_ms` parameter to the [serial](macro@serial) attribute. Note that
+the timeout is counted from the first invocation of the test, not from the time the previous test was completed. This can
+lead to some unpredictable behavior based on the number of parallel tests run on the system.
+```rust
+#[test]
+#[serial(timeout_ms = 1000)]
+fn test_serial_one() {
+  // Do things
+}
+#[test]
+#[serial(test_name, timeout_ms = 1000)]
+fn test_serial_another() {
+  // Do things
+}
+```
