@@ -2,7 +2,7 @@
 
 use crate::code_lock::{check_new_key, LOCKS};
 use futures::FutureExt;
-use std::{ops::Deref, panic};
+use std::panic;
 
 #[doc(hidden)]
 pub fn local_parallel_core_with_return<E>(
@@ -11,10 +11,10 @@ pub fn local_parallel_core_with_return<E>(
 ) -> Result<(), E> {
     check_new_key(name);
 
-    let unlock = LOCKS.read_recursive();
-    unlock.deref()[name].start_parallel();
+    let lock = LOCKS.get(name).unwrap();
+    lock.start_parallel();
     let res = panic::catch_unwind(function);
-    unlock.deref()[name].end_parallel();
+    lock.end_parallel();
     match res {
         Ok(ret) => ret,
         Err(err) => {
@@ -27,12 +27,12 @@ pub fn local_parallel_core_with_return<E>(
 pub fn local_parallel_core(name: &str, function: fn()) {
     check_new_key(name);
 
-    let unlock = LOCKS.read_recursive();
-    unlock.deref()[name].start_parallel();
+    let lock = LOCKS.get(name).unwrap();
+    lock.start_parallel();
     let res = panic::catch_unwind(|| {
         function();
     });
-    unlock.deref()[name].end_parallel();
+    lock.end_parallel();
     if let Err(err) = res {
         panic::resume_unwind(err);
     }
@@ -45,10 +45,10 @@ pub async fn local_async_parallel_core_with_return<E>(
 ) -> Result<(), E> {
     check_new_key(name);
 
-    let unlock = LOCKS.read_recursive();
-    unlock.deref()[name].start_parallel();
+    let lock = LOCKS.get(name).unwrap();
+    lock.start_parallel();
     let res = fut.catch_unwind().await;
-    unlock.deref()[name].end_parallel();
+    lock.end_parallel();
     match res {
         Ok(ret) => ret,
         Err(err) => {
@@ -64,10 +64,10 @@ pub async fn local_async_parallel_core(
 ) {
     check_new_key(name);
 
-    let unlock = LOCKS.read_recursive();
-    unlock.deref()[name].start_parallel();
+    let lock = LOCKS.get(name).unwrap();
+    lock.start_parallel();
     let res = fut.catch_unwind().await;
-    unlock.deref()[name].end_parallel();
+    lock.end_parallel();
     if let Err(err) = res {
         panic::resume_unwind(err);
     }
@@ -79,7 +79,7 @@ mod tests {
         code_lock::LOCKS, local_async_parallel_core, local_async_parallel_core_with_return,
         local_parallel_core, local_parallel_core_with_return,
     };
-    use std::{io::Error, ops::Deref, panic};
+    use std::{io::Error, panic};
 
     #[test]
     fn unlock_on_assert_sync_without_return() {
@@ -88,9 +88,11 @@ mod tests {
                 assert!(false);
             })
         });
-        let unlock = LOCKS.read_recursive();
         assert_eq!(
-            unlock.deref()["unlock_on_assert_sync_without_return"].parallel_count(),
+            LOCKS
+                .get("unlock_on_assert_sync_without_return")
+                .unwrap()
+                .parallel_count(),
             0
         );
     }
@@ -106,9 +108,11 @@ mod tests {
                 },
             )
         });
-        let unlock = LOCKS.read_recursive();
         assert_eq!(
-            unlock.deref()["unlock_on_assert_sync_with_return"].parallel_count(),
+            LOCKS
+                .get("unlock_on_assert_sync_with_return")
+                .unwrap()
+                .parallel_count(),
             0
         );
     }
@@ -127,9 +131,11 @@ mod tests {
             let _enter_guard = handle.enter();
             futures::executor::block_on(call_serial_test_fn());
         });
-        let unlock = LOCKS.read_recursive();
         assert_eq!(
-            unlock.deref()["unlock_on_assert_async_without_return"].parallel_count(),
+            LOCKS
+                .get("unlock_on_assert_async_without_return")
+                .unwrap()
+                .parallel_count(),
             0
         );
     }
@@ -156,9 +162,11 @@ mod tests {
             let _enter_guard = handle.enter();
             futures::executor::block_on(call_serial_test_fn());
         });
-        let unlock = LOCKS.read_recursive();
         assert_eq!(
-            unlock.deref()["unlock_on_assert_async_with_return"].parallel_count(),
+            LOCKS
+                .get("unlock_on_assert_async_with_return")
+                .unwrap()
+                .parallel_count(),
             0
         );
     }

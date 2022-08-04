@@ -1,16 +1,15 @@
 use crate::rwlock::{Locks, MutexGuardWrapper};
+use dashmap::{try_result::TryResult, DashMap};
 use lazy_static::lazy_static;
 #[cfg(all(feature = "logging", feature = "timeout"))]
 use log::debug;
+#[cfg(feature = "timeout")]
 use parking_lot::RwLock;
+use std::sync::{atomic::AtomicU32, Arc};
+#[cfg(feature = "timeout")]
+use std::time::Duration;
 #[cfg(feature = "timeout")]
 use std::time::Instant;
-use std::{
-    collections::HashMap,
-    ops::{Deref, DerefMut},
-    sync::{atomic::AtomicU32, Arc},
-    time::Duration,
-};
 
 pub(crate) struct UniqueReentrantMutex {
     locks: Locks,
@@ -45,8 +44,8 @@ impl UniqueReentrantMutex {
 }
 
 lazy_static! {
-    pub(crate) static ref LOCKS: Arc<RwLock<HashMap<String, UniqueReentrantMutex>>> =
-        Arc::new(RwLock::new(HashMap::new()));
+    pub(crate) static ref LOCKS: Arc<DashMap<String, UniqueReentrantMutex>> =
+        Arc::new(DashMap::new());
     static ref MUTEX_ID: Arc<AtomicU32> = Arc::new(AtomicU32::new(1));
 }
 
@@ -93,25 +92,25 @@ pub(crate) fn check_new_key(name: &str) {
             debug!("Waiting for '{}' {:?}", name, duration);
         }
         // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
-        let try_unlock = LOCKS.try_read_recursive_for(Duration::from_secs(1));
-        if let Some(unlock) = try_unlock {
-            if unlock.deref().contains_key(name) {
+        match LOCKS.try_get(name) {
+            TryResult::Present(_) => {
                 return;
             }
-            drop(unlock); // so that we don't hold the read lock and so the writer can maybe succeed
-        } else {
-            continue; // wasn't able to get read lock
-        }
+            TryResult::Locked => {
+                continue; // wasn't able to get read lock
+            }
+            TryResult::Absent => {} // do the write path below
+        };
 
         // This is the rare path, which avoids the multi-writer situation mostly
-        let try_lock = LOCKS.try_write_for(Duration::from_secs(1));
+        let try_entry = LOCKS.try_entry(name.to_string());
 
-        if let Some(mut lock) = try_lock {
-            lock.deref_mut().entry(name.to_string()).or_default();
+        if let Some(entry) = try_entry {
+            entry.or_default();
             return;
         }
 
-        // If the try_lock fails, then go around the loop again
+        // If the try_entry fails, then go around the loop again
         // Odds are another test was also locking on the write and has now written the key
 
         #[cfg(feature = "timeout")]
