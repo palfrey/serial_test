@@ -1,28 +1,29 @@
 #![allow(clippy::await_holding_lock)]
 
 use crate::code_lock::{check_new_key, LOCKS};
-use std::ops::Deref;
+use std::time::Duration;
 
 #[doc(hidden)]
 pub fn local_serial_core_with_return<E>(
     name: &str,
+    max_wait: Option<Duration>,
     function: fn() -> Result<(), E>,
 ) -> Result<(), E> {
-    check_new_key(name);
+    check_new_key(name, max_wait);
 
-    let unlock = LOCKS.read_recursive();
+    let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.deref()[name].lock();
+    let _guard = unlock.lock();
     function()
 }
 
 #[doc(hidden)]
-pub fn local_serial_core(name: &str, function: fn()) {
-    check_new_key(name);
+pub fn local_serial_core(name: &str, max_wait: Option<Duration>, function: fn()) {
+    check_new_key(name, max_wait);
 
-    let unlock = LOCKS.read_recursive();
+    let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.deref()[name].lock();
+    let _guard = unlock.lock();
     function();
 }
 
@@ -30,24 +31,30 @@ pub fn local_serial_core(name: &str, function: fn()) {
 #[cfg(feature = "async")]
 pub async fn local_async_serial_core_with_return<E>(
     name: &str,
+    max_wait: Option<Duration>,
     fut: impl std::future::Future<Output = Result<(), E>>,
 ) -> Result<(), E> {
-    check_new_key(name);
+    check_new_key(name, max_wait);
 
-    let unlock = LOCKS.read_recursive();
+    let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.deref()[name].lock();
+    let _guard = unlock.lock();
     fut.await
 }
 
 #[doc(hidden)]
 #[cfg(feature = "async")]
-pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<Output = ()>) {
-    check_new_key(name);
+pub async fn local_async_serial_core(
+    name: &str,
+    max_wait: Option<Duration>,
+    fut: impl std::future::Future<Output = ()>,
+) {
+    check_new_key(name, max_wait);
 
-    let unlock = LOCKS.read_recursive();
+    let unlock = LOCKS.get(name).expect("key to be set");
     // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.deref()[name].lock();
+    let _guard = unlock.lock();
+
     fut.await;
 }
 
@@ -59,7 +66,6 @@ mod tests {
     use itertools::Itertools;
     use parking_lot::RwLock;
     use std::{
-        ops::Deref,
         sync::{Arc, Barrier},
         thread,
         time::Duration,
@@ -79,12 +85,10 @@ mod tests {
             let c = barrier.clone();
             threads.push(thread::spawn(move || {
                 c.wait();
-                check_new_key("foo");
+                check_new_key("foo", None);
                 {
-                    let unlock = local_locks
-                        .try_read_recursive_for(Duration::from_secs(1))
-                        .expect("read lock didn't work");
-                    let mutex = unlock.deref().get("foo").unwrap();
+                    let unlock = local_locks.get("foo").expect("read didn't work");
+                    let mutex = unlock.value();
 
                     let mut ptr_guard = local_ptrs
                         .try_write_for(Duration::from_secs(1))
@@ -109,11 +113,10 @@ mod tests {
     #[test]
     fn unlock_on_assert() {
         let _ = std::panic::catch_unwind(|| {
-            local_serial_core("assert", || {
+            local_serial_core("assert", None, || {
                 assert!(false);
             })
         });
-        let unlock = LOCKS.read_recursive();
-        assert!(!unlock.deref()["assert"].is_locked());
+        assert!(!LOCKS.get("assert").unwrap().is_locked());
     }
 }

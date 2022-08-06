@@ -64,9 +64,6 @@ mod parallel_file_lock;
 #[cfg(feature = "file_locks")]
 mod serial_file_lock;
 
-#[cfg(feature = "timeout")]
-pub use code_lock::set_max_wait;
-
 #[cfg(feature = "async")]
 pub use parallel_code_lock::{local_async_parallel_core, local_async_parallel_core_with_return};
 

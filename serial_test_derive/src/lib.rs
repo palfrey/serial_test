@@ -33,6 +33,7 @@ use std::ops::Deref;
 /// If you want different subsets of tests to be serialised with each
 /// other, but not depend on other subsets, you can add an argument to [serial](macro@serial), and all calls
 /// with identical arguments will be called in serial. e.g.
+///
 /// ````
 /// #[test]
 /// #[serial(something)]
@@ -60,6 +61,24 @@ use std::ops::Deref;
 /// ````
 /// `test_serial_one` and `test_serial_another` will be executed in serial, as will `test_serial_third` and `test_serial_fourth`
 /// but neither sequence will be blocked by the other
+///
+/// For each test, a timeout can be specified with the `timeout_ms` parameter to the [serial](macro@serial) attribute. Note that
+/// the timeout is counted from the first invocation of the test, not from the time the previous test was completed. This can
+/// lead to some unpredictable behavior based on the number of parallel tests run on the system.
+///
+/// ````
+/// #[test]
+/// #[serial(timeout_ms = 1000)]
+/// fn test_serial_one() {
+///   // Do things
+/// }
+///
+/// #[test]
+/// #[serial(timeout_ms = 1000)]
+/// fn test_serial_another() {
+///   // Do things
+/// }
+/// ````
 ///
 /// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) are supported
 #[proc_macro_attribute]
@@ -201,13 +220,37 @@ impl<T: ToTokens> ToTokens for QuoteOption<T> {
     }
 }
 
-fn get_raw_args(attr: proc_macro2::TokenStream) -> Vec<String> {
+enum Arg {
+    Name(String),
+    Timeout(u64),
+}
+
+fn get_raw_args(attr: proc_macro2::TokenStream) -> Vec<Arg> {
     let mut attrs = attr.into_iter().collect::<Vec<TokenTree>>();
-    let mut raw_args: Vec<String> = Vec::new();
+    let mut raw_args: Vec<Arg> = Vec::new();
     while !attrs.is_empty() {
         match attrs.remove(0) {
             TokenTree::Ident(id) => {
-                raw_args.push(id.to_string());
+                let name = id.to_string();
+                if name == "timeout_ms" {
+                    match attrs.first() {
+                        Some(TokenTree::Punct(p)) if p.as_char() == '=' && !attrs.is_empty() => {
+                            attrs.remove(0);
+                            if let TokenTree::Literal(lit) = attrs.remove(0) {
+                                let millis = lit
+                                    .to_string()
+                                    .parse::<u64>()
+                                    .expect("Not a valid duration for Timeout");
+                                raw_args.push(Arg::Timeout(millis));
+                            } else {
+                                panic!("Timeout argument must be a literal duration");
+                            }
+                        }
+                        _ => raw_args.push(Arg::Name(name)),
+                    }
+                } else {
+                    raw_args.push(Arg::Name(name));
+                }
             }
             TokenTree::Literal(literal) => {
                 let string_literal = literal.to_string();
@@ -215,7 +258,9 @@ fn get_raw_args(attr: proc_macro2::TokenStream) -> Vec<String> {
                     panic!("Expected a string literal, got '{}'", string_literal);
                 }
                 // Hacky way of getting a string without the enclosing quotes
-                raw_args.push(string_literal[1..string_literal.len() - 1].to_string());
+                raw_args.push(Arg::Name(
+                    string_literal[1..string_literal.len() - 1].to_string(),
+                ));
             }
             x => {
                 panic!("Expected either strings or literals as args, not {}", x);
@@ -233,60 +278,79 @@ fn get_raw_args(attr: proc_macro2::TokenStream) -> Vec<String> {
     raw_args
 }
 
-fn get_core_key(attr: proc_macro2::TokenStream) -> String {
-    let mut raw_args = get_raw_args(attr);
-    match raw_args.len() {
-        0 => "".to_string(),
-        1 => raw_args.pop().unwrap(),
-        n => {
-            panic!(
-                "Expected either 0 or 1 arguments, got {}: {:?}",
-                n, raw_args
-            );
+#[derive(Default, Debug)]
+struct Config {
+    name: String,
+    timeout: Option<u64>,
+    path: Option<String>,
+}
+
+fn get_core_key(attr: proc_macro2::TokenStream) -> Config {
+    let raw_args = get_raw_args(attr);
+    let mut c = Config::default();
+    let mut name_found = false;
+    for a in raw_args {
+        match a {
+            Arg::Name(name) if !name_found => {
+                c.name = name;
+                name_found = true;
+            }
+            Arg::Name(name) => {
+                c.path = Some(name);
+            }
+            Arg::Timeout(timeout) => {
+                c.timeout = Some(timeout);
+            }
         }
     }
+    c
 }
 
 fn local_serial_core(
     attr: proc_macro2::TokenStream,
     input: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
-    let key = get_core_key(attr);
-    serial_setup(input, vec![Box::new(key)], "local")
+    let config = get_core_key(attr);
+    let timeout = if let Some(t) = config.timeout {
+        quote! { ::std::option::Option::Some(::std::time::Duration::from_millis(#t)) }
+    } else {
+        quote! { ::std::option::Option::None }
+    };
+    let args: Vec<Box<dyn ToTokens>> = vec![Box::new(config.name), Box::new(timeout)];
+    serial_setup(input, args, "local")
 }
 
 fn local_parallel_core(
     attr: proc_macro2::TokenStream,
     input: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
-    let key = get_core_key(attr);
-    parallel_setup(input, vec![Box::new(key)], "local")
+    let config = get_core_key(attr);
+    let timeout = if let Some(t) = config.timeout {
+        quote! { Some(::std::time::Duration::from_millis(#t)) }
+    } else {
+        quote! { None }
+    };
+    let args: Vec<Box<dyn ToTokens>> = vec![Box::new(config.name), Box::new(timeout)];
+    parallel_setup(input, args, "local")
 }
 
 fn fs_args(attr: proc_macro2::TokenStream) -> Vec<Box<dyn ToTokens>> {
-    let none_ident = Box::new(format_ident!("None"));
-    let mut args: Vec<Box<dyn quote::ToTokens>> = Vec::new();
-    let mut raw_args = get_raw_args(attr);
-    match raw_args.len() {
-        0 => {
-            args.push(Box::new("".to_string()));
-            args.push(none_ident);
-        }
-        1 => {
-            args.push(Box::new(raw_args.pop().unwrap()));
-            args.push(none_ident);
-        }
-        2 => {
-            let key = raw_args.remove(0);
-            let path = raw_args.remove(0);
-            args.push(Box::new(key));
-            args.push(Box::new(QuoteOption(Some(path))));
-        }
-        n => {
-            panic!("Expected 0-2 arguments, got {}: {:?}", n, raw_args);
-        }
-    }
-    args
+    let config = get_core_key(attr);
+    let timeout = if let Some(_t) = config.timeout {
+        panic!("Timeout is not supported for file_serial");
+        // quote! { ::std::option::Option::Some(::std::time::Duration::from_millis(#t)) }
+    } else {
+        quote! { ::std::option::Option::None }
+    };
+    vec![
+        Box::new(config.name),
+        Box::new(timeout),
+        if let Some(path) = config.path {
+            Box::new(QuoteOption(Some(path)))
+        } else {
+            Box::new(format_ident!("None"))
+        },
+    ]
 }
 
 fn fs_serial_core(
@@ -438,12 +502,61 @@ mod tests {
         let compare = quote! {
             #[test]
             fn foo () {
-                serial_test::local_serial_core("", || {} );
+                serial_test::local_serial_core("",  :: std :: option :: Option :: None, || {} );
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
     }
 
+    #[test]
+    fn test_serial_with_timeout() {
+        let attrs = vec![
+            TokenTree::Ident(format_ident!("timeout_ms")),
+            TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+            TokenTree::Literal(Literal::u8_unsuffixed(42)),
+        ];
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                serial_test::local_serial_core("",  :: std :: option :: Option :: Some (::std::time::Duration::from_millis(42u64)), || {} );
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
+
+    #[test]
+    fn test_serial_with_name_and_timeout() {
+        let attrs = vec![
+            TokenTree::Ident(format_ident!("foo")),
+            TokenTree::Punct(Punct::new(',', Spacing::Alone)),
+            TokenTree::Ident(format_ident!("timeout_ms")),
+            TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+            TokenTree::Literal(Literal::u8_unsuffixed(42)),
+        ];
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                serial_test::local_serial_core("foo",  :: std :: option :: Option :: Some (::std::time::Duration::from_millis(42u64)), || {} );
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
     #[test]
     fn test_stripped_attributes() {
         let _ = env_logger::builder().is_test(true).try_init();
@@ -460,7 +573,7 @@ mod tests {
             #[test]
             #[something_else]
             fn foo () {
-                serial_test::local_serial_core("", || {} );
+                serial_test::local_serial_core("",  :: std :: option :: Option :: None, || {} );
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -476,7 +589,7 @@ mod tests {
         let stream = local_serial_core(attrs.into(), input);
         let compare = quote! {
             async fn foo () {
-                serial_test::local_async_serial_core("", || async {} ).await;
+                serial_test::local_async_serial_core("",  :: std :: option :: Option :: None, || async {} ).await;
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -492,7 +605,7 @@ mod tests {
         let stream = local_serial_core(attrs.into(), input);
         let compare = quote! {
             async fn foo () -> Result<(), ()> {
-                serial_test::local_async_serial_core_with_return("", || async { Ok(()) } ).await;
+                serial_test::local_async_serial_core_with_return("", :: std :: option :: Option :: None, || async { Ok(()) } ).await;
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -521,7 +634,7 @@ mod tests {
         let compare = quote! {
             #[test]
             fn foo () {
-                serial_test::fs_serial_core("foo", None, || {} );
+                serial_test::fs_serial_core("foo",  :: std :: option :: Option :: None, None, || {} );
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -545,7 +658,7 @@ mod tests {
         let compare = quote! {
             #[test]
             fn foo () {
-                serial_test::fs_serial_core("foo", ::std::option::Option::Some("bar_path"), || {} );
+                serial_test::fs_serial_core("foo",  :: std :: option :: Option :: None, ::std::option::Option::Some("bar_path"), || {} );
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));

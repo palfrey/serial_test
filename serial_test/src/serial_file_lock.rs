@@ -1,7 +1,9 @@
+use std::time::Duration;
+
 use crate::file_lock::make_lock_for_name_and_path;
 
 #[doc(hidden)]
-pub fn fs_serial_core(name: &str, path: Option<&str>, function: fn()) {
+pub fn fs_serial_core(name: &str, _max_wait: Option<Duration>, path: Option<&str>, function: fn()) {
     let mut lock = make_lock_for_name_and_path(name, path);
     lock.start_serial();
     function();
@@ -11,6 +13,7 @@ pub fn fs_serial_core(name: &str, path: Option<&str>, function: fn()) {
 #[doc(hidden)]
 pub fn fs_serial_core_with_return<E>(
     name: &str,
+    _max_wait: Option<Duration>,
     path: Option<&str>,
     function: fn() -> Result<(), E>,
 ) -> Result<(), E> {
@@ -24,6 +27,7 @@ pub fn fs_serial_core_with_return<E>(
 #[doc(hidden)]
 pub async fn fs_async_serial_core_with_return<E>(
     name: &str,
+    _max_wait: Option<Duration>,
     path: Option<&str>,
     fut: impl std::future::Future<Output = Result<(), E>>,
 ) -> Result<(), E> {
@@ -37,6 +41,7 @@ pub async fn fs_async_serial_core_with_return<E>(
 #[doc(hidden)]
 pub async fn fs_async_serial_core(
     name: &str,
+    _max_wait: Option<Duration>,
     path: Option<&str>,
     fut: impl std::future::Future<Output = ()>,
 ) {
@@ -57,14 +62,14 @@ mod tests {
 
     #[test]
     fn test_serial() {
-        fs_serial_core("test", None, || {});
+        fs_serial_core("test", None, None, || {});
     }
 
     #[test]
     fn unlock_on_assert_sync_without_return() {
         let lock_path = path_for_name("unlock_on_assert_sync_without_return");
         let _ = panic::catch_unwind(|| {
-            fs_serial_core("foo", Some(&lock_path), || {
+            fs_serial_core("foo", None, Some(&lock_path), || {
                 assert!(false);
             })
         });
