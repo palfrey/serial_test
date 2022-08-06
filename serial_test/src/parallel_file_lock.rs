@@ -126,7 +126,6 @@ mod tests {
 
     #[tokio::test]
     #[cfg(feature = "async")]
-
     async fn unlock_on_assert_async_without_return() {
         let lock_path = path_for_name("unlock_on_assert_async_without_return");
         async fn demo_assert() {
