@@ -25,6 +25,7 @@ pub fn fs_serial_core_with_return<E>(
 }
 
 #[doc(hidden)]
+#[cfg(feature = "async")]
 pub async fn fs_async_serial_core_with_return<E>(
     name: &str,
     _max_wait: Option<Duration>,
@@ -39,6 +40,7 @@ pub async fn fs_async_serial_core_with_return<E>(
 }
 
 #[doc(hidden)]
+#[cfg(feature = "async")]
 pub async fn fs_async_serial_core(
     name: &str,
     _max_wait: Option<Duration>,
