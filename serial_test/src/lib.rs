@@ -45,6 +45,18 @@
 //!   // Do things
 //! }
 //! ````
+//! 
+//! 
+//! For each test, a timeout can be specified with the `timeout_ms` parameter to the [serial](macro@serial) attribute. Note that
+//! the timeout is counted from the first invocation of the test, not from the time the previous test was completed. This can
+//! lead to [some unpredictable behavior](https://github.com/palfrey/serial_test/issues/76) based on the number of parallel tests run on the system.
+//! ```rust
+//! #[test]
+//! #[serial(timeout_ms = 1000)]
+//! fn test_serial_one() {
+//!   // Do things
+//! }
+//! ```
 //!
 //! ## Feature flags
 #![cfg_attr(

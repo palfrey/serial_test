@@ -32,10 +32,10 @@ default = ["logging", "async"]
 ## Switches on debug logging (and requires the `log` package)
 logging = ["log"]
 
-## Enables async features
+## Enables async features (and requires the `futures` package)
 async = ["futures"]
 
-## The file_locks feature unlocks the `file_serial`/`file_parallel` macros
+## The file_locks feature unlocks the `file_serial`/`file_parallel` macros (and requires the `fslock` package)
 file_locks = ["fslock"]
 
 docsrs = ["document-features"]
