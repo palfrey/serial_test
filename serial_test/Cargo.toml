@@ -19,7 +19,7 @@ document-features = { version = "0.2", optional = true }
 log = { version = "0.4", optional = true }
 futures = { version = "^0.3", default_features = false, features = [
     "executor",
-] }
+], optional = true}
 dashmap = { version = "5"}
 
 [dev-dependencies]
@@ -27,10 +27,13 @@ itertools = "0.10"
 tokio = { version = "^1.17", features = ["macros", "rt"] }
 
 [features]
-default = ["logging"]
+default = ["logging", "async"]
 
 ## Switches on debug logging (and requires the `log` package)
 logging = ["log"]
+
+## Enables async features
+async = ["futures"]
 
 ## The file_locks feature unlocks the `file_serial`/`file_parallel` macros
 file_locks = ["fslock"]

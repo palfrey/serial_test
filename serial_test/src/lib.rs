@@ -64,26 +64,27 @@ mod parallel_file_lock;
 #[cfg(feature = "file_locks")]
 mod serial_file_lock;
 
-pub use parallel_code_lock::{
-    local_async_parallel_core, local_async_parallel_core_with_return, local_parallel_core,
-    local_parallel_core_with_return,
-};
-pub use serial_code_lock::{
-    local_async_serial_core, local_async_serial_core_with_return, local_serial_core,
-    local_serial_core_with_return,
-};
+#[cfg(feature = "async")]
+pub use parallel_code_lock::{local_async_parallel_core, local_async_parallel_core_with_return};
+
+pub use parallel_code_lock::{local_parallel_core, local_parallel_core_with_return};
+
+#[cfg(feature = "async")]
+pub use serial_code_lock::{local_async_serial_core, local_async_serial_core_with_return};
+
+pub use serial_code_lock::{local_serial_core, local_serial_core_with_return};
+
+#[cfg(all(feature = "file_locks", feature = "async"))]
+pub use serial_file_lock::{fs_async_serial_core, fs_async_serial_core_with_return};
 
 #[cfg(feature = "file_locks")]
-pub use serial_file_lock::{
-    fs_async_serial_core, fs_async_serial_core_with_return, fs_serial_core,
-    fs_serial_core_with_return,
-};
+pub use serial_file_lock::{fs_serial_core, fs_serial_core_with_return};
+
+#[cfg(all(feature = "file_locks", feature = "async"))]
+pub use parallel_file_lock::{fs_async_parallel_core, fs_async_parallel_core_with_return};
 
 #[cfg(feature = "file_locks")]
-pub use parallel_file_lock::{
-    fs_async_parallel_core, fs_async_parallel_core_with_return, fs_parallel_core,
-    fs_parallel_core_with_return,
-};
+pub use parallel_file_lock::{fs_parallel_core, fs_parallel_core_with_return};
 
 // Re-export #[serial/parallel].
 pub use serial_test_derive::{parallel, serial};

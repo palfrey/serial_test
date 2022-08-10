@@ -28,6 +28,7 @@ pub fn local_serial_core(name: &str, max_wait: Option<Duration>, function: fn())
 }
 
 #[doc(hidden)]
+#[cfg(feature = "async")]
 pub async fn local_async_serial_core_with_return<E>(
     name: &str,
     max_wait: Option<Duration>,
@@ -42,6 +43,7 @@ pub async fn local_async_serial_core_with_return<E>(
 }
 
 #[doc(hidden)]
+#[cfg(feature = "async")]
 pub async fn local_async_serial_core(
     name: &str,
     max_wait: Option<Duration>,

@@ -380,6 +380,9 @@ where
 {
     let ast: syn::ItemFn = syn::parse2(input).unwrap();
     let asyncness = ast.sig.asyncness;
+    if asyncness.is_some() && cfg!(not(feature = "async")) {
+        panic!("async testing attempted with async feature disabled in serial_test!");
+    }
     let name = ast.sig.ident;
     let return_type = match ast.sig.output {
         syn::ReturnType::Default => None,
@@ -577,6 +580,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "async")]
     fn test_serial_async() {
         let attrs = proc_macro2::TokenStream::new();
         let input = quote! {
@@ -592,6 +596,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "async")]
     fn test_serial_async_return() {
         let attrs = proc_macro2::TokenStream::new();
         let input = quote! {
@@ -609,6 +614,7 @@ mod tests {
     // 1.54 needed for https://github.com/rust-lang/rust/commit/9daf546b77dbeab7754a80d7336cd8d00c6746e4 change in note message
     #[rustversion::since(1.54)]
     #[test]
+    #[cfg(feature = "async")]
     fn test_serial_async_before_wrapper() {
         let t = trybuild::TestCases::new();
         t.compile_fail("tests/broken/test_serial_async_before_wrapper.rs");
