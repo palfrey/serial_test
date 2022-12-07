@@ -377,6 +377,7 @@ where
     if asyncness.is_some() && cfg!(not(feature = "async")) {
         panic!("async testing attempted with async feature disabled in serial_test!");
     }
+    let vis = ast.vis;
     let name = ast.sig.ident;
     let return_type = match ast.sig.output {
         syn::ReturnType::Default => None,
@@ -414,7 +415,7 @@ where
                 quote! {
                     #(#attrs)
                     *
-                    async fn #name () -> #ret {
+                    #vis async fn #name () -> #ret {
                         serial_test::#fnname(#(#args ),*, || async #block ).await;
                     }
                 }
@@ -424,7 +425,7 @@ where
                 quote! {
                     #(#attrs)
                     *
-                    fn #name () -> #ret {
+                    #vis fn #name () -> #ret {
                         serial_test::#fnname(#(#args ),*, || #block )
                     }
                 }
@@ -437,7 +438,7 @@ where
                 quote! {
                     #(#attrs)
                     *
-                    async fn #name () {
+                    #vis async fn #name () {
                         serial_test::#fnname(#(#args ),*, || async #block ).await;
                     }
                 }
@@ -447,7 +448,7 @@ where
                 quote! {
                     #(#attrs)
                     *
-                    fn #name () {
+                    #vis fn #name () {
                         serial_test::#fnname(#(#args ),*, || #block );
                     }
                 }
