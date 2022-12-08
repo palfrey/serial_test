@@ -504,6 +504,23 @@ mod tests {
     }
 
     #[test]
+    fn test_serial_with_pub() {
+        let attrs = proc_macro2::TokenStream::new();
+        let input = quote! {
+            #[test]
+            pub fn foo() {}
+        };
+        let stream = local_serial_core(attrs.into(), input);
+        let compare = quote! {
+            #[test]
+            pub fn foo () {
+                serial_test::local_serial_core("",  :: std :: option :: Option :: None, || {} );
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
+
+    #[test]
     fn test_serial_with_timeout() {
         let attrs = vec![
             TokenTree::Ident(format_ident!("timeout_ms")),
