@@ -412,7 +412,7 @@ where
         match asyncness {
             Some(_) => {
                 let fnname = format_ident!("{}_async_{}_core_with_return", prefix, kind);
-                let temp_fn = format_ident!("{}_internal", name);
+                let temp_fn = format_ident!("_{}_internal", name);
                 quote! {
                     async fn #temp_fn () -> #ret
                         #block
@@ -439,7 +439,7 @@ where
         match asyncness {
             Some(_) => {
                 let fnname = format_ident!("{}_async_{}_core", prefix, kind);
-                let temp_fn = format_ident!("{}_internal", name);
+                let temp_fn = format_ident!("_{}_internal", name);
                 quote! {
                     async fn #temp_fn ()
                         #block
@@ -608,8 +608,9 @@ mod tests {
         };
         let stream = local_serial_core(attrs.into(), input);
         let compare = quote! {
+            async fn _foo_internal () { } 
             async fn foo () {
-                serial_test::local_async_serial_core("",  :: std :: option :: Option :: None, || async {} ).await;
+                serial_test::local_async_serial_core("",  :: std :: option :: Option :: None, _foo_internal()).await;
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -624,8 +625,9 @@ mod tests {
         };
         let stream = local_serial_core(attrs.into(), input);
         let compare = quote! {
+            async fn _foo_internal ()  -> Result<(), ()> { Ok(()) }
             async fn foo () -> Result<(), ()> {
-                serial_test::local_async_serial_core_with_return("", :: std :: option :: Option :: None, || async { Ok(()) } ).await;
+                serial_test::local_async_serial_core_with_return("", :: std :: option :: Option :: None, _foo_internal() ).await
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
