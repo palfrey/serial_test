@@ -345,4 +345,8 @@ mod tests {
     #[serial]
     async fn async_attribute_works() {
     }
+    #[serial]
+    async fn async_attribute_works_with_return() -> Result<(), ()> {
+        Ok(())
+    }
 }

@@ -412,11 +412,15 @@ where
         match asyncness {
             Some(_) => {
                 let fnname = format_ident!("{}_async_{}_core_with_return", prefix, kind);
+                let temp_fn = format_ident!("{}_internal", name);
                 quote! {
+                    async fn #temp_fn () -> #ret
+                        #block
+                    
                     #(#attrs)
                     *
                     #vis async fn #name () -> #ret {
-                        serial_test::#fnname(#(#args ),*, || async #block ).await;
+                        serial_test::#fnname(#(#args ),*, #temp_fn()).await
                     }
                 }
             }
@@ -435,11 +439,15 @@ where
         match asyncness {
             Some(_) => {
                 let fnname = format_ident!("{}_async_{}_core", prefix, kind);
+                let temp_fn = format_ident!("{}_internal", name);
                 quote! {
+                    async fn #temp_fn ()
+                        #block
+
                     #(#attrs)
                     *
                     #vis async fn #name () {
-                        serial_test::#fnname(#(#args ),*, || async #block ).await;
+                        serial_test::#fnname(#(#args ),*, #temp_fn()).await;
                     }
                 }
             }
