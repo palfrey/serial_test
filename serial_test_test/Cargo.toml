@@ -23,3 +23,6 @@ futures-util = {version = "^0.3", default_features = false }
 default = ["serial_test/logging", "async"]
 file_locks = ["serial_test/file_locks"]
 async = ["serial_test/async", "wasm-bindgen-test", "scoped-tls"]
+
+[package.metadata.cargo-all-features]
+skip_optional_dependencies = true
