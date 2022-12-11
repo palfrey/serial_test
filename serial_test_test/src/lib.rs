@@ -93,6 +93,7 @@ mod tests {
         thread,
         time::Duration,
     };
+    #[cfg(feature = "async")]
     use wasm_bindgen_test::wasm_bindgen_test;
 
     lazy_static! {
@@ -169,30 +170,35 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "async")]
     #[tokio::test]
     #[serial]
     async fn test_async_serial_no_arg_tokio_first() {
         init();
     }
 
+    #[cfg(feature = "async")]
     #[serial]
     #[tokio::test]
     async fn test_async_serial_no_arg_serial_first() {
         init();
     }
 
+    #[cfg(feature = "async")]
     #[serial]
     #[actix_rt::test]
     async fn test_async_serial_no_arg_actix_with_serial_firs() {
         init();
     }
 
+    #[cfg(feature = "async")]
     #[actix_rt::test]
     #[serial]
     async fn test_async_serial_no_arg_actix_first() {
         init();
     }
 
+    #[cfg(feature = "async")]
     #[tokio::test]
     #[serial]
     async fn test_async_can_return() -> Result<(), ()> {
@@ -340,14 +346,14 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "file_locks")]
+    #[cfg(all(feature = "file_locks", feature = "async"))]
     #[tokio::test]
     #[file_parallel]
     async fn file_parallel_with_async_return() -> Result<(), ()> {
         Ok(())
     }
 
-    #[cfg(feature = "file_locks")]
+    #[cfg(all(feature = "file_locks", feature = "async"))]
     #[tokio::test]
     #[file_parallel]
     async fn file_parallel_with_async() {
@@ -355,17 +361,22 @@ mod tests {
     }
 
     // Note, not actually a test as such, just a "can you wrap serial functions" compile-time check
+    #[cfg(feature = "async")]
     #[serial]
     async fn async_attribute_works() {}
+
+    #[cfg(feature = "async")]
     #[serial]
     async fn async_attribute_works_with_return() -> Result<(), ()> {
         Ok(())
     }
 
+    #[cfg(feature = "async")]
     #[wasm_bindgen_test]
     #[serial]
     async fn wasm_works_first() {}
 
+    #[cfg(feature = "async")]
     #[serial]
     #[wasm_bindgen_test]
     async fn wasm_works_second() {}
