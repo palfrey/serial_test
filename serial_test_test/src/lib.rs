@@ -340,4 +340,9 @@ mod tests {
     async fn file_parallel_with_async() {
         init();
     }
+
+    // Note, not actually a test as such, just a "can you wrap serial functions" compile-time check
+    #[serial]
+    async fn async_attribute_works() {
+    }
 }

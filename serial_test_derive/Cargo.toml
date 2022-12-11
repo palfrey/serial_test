@@ -22,3 +22,6 @@ proc-macro-error = { version = "1" }
 env_logger = "0.9"
 rustversion = "1.0"
 trybuild = "1"
+
+[features]
+async = []
