@@ -170,13 +170,25 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_async_serial_no_arg() {
+    async fn test_async_serial_no_arg_tokio_first() {
+        init();
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_async_serial_no_arg_serial_first() {
+        init();
+    }    
+
+    #[serial]
+    #[actix_rt::test]
+    async fn test_async_serial_no_arg_actix_with_serial_firs() {
         init();
     }
 
     #[actix_rt::test]
     #[serial]
-    async fn test_async_serial_no_arg_actix() {
+    async fn test_async_serial_no_arg_actix_first() {
         init();
     }
 

@@ -16,12 +16,9 @@ proc-macro = true
 quote = "1.0"
 syn = { version="1.0", features=["full"] }
 proc-macro2 = "1.0"
-proc-macro-error = { version = "1" }
 
 [dev-dependencies]
 env_logger = "0.9"
-rustversion = "1.0"
-trybuild = "1"
 
 [features]
 async = []

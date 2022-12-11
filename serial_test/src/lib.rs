@@ -30,10 +30,6 @@
 //! at the same time as each other, but not at the same time as a test with [serial](macro@serial). Tests with
 //! neither attribute may run at any time and no guarantees are made about their timing!
 //!
-//! Note that if you're using an async test reactor attribute (e.g.
-//! `tokio::test` or `actix_rt::test`) then they should be listed *before* [serial](macro@serial)/[parallel](macro@parallel), otherwise we don't get an
-//! async function and things break. There's now an error for this case to improve debugging.
-//!
 //! For cases like doctests and integration tests where the tests are run as separate processes, we also support
 //! [file_serial](macro@file_serial)/[file_parallel](macro@file_parallel), with similar properties but based off file locking. Note that there are no
 //! guarantees about one test with [serial](macro@serial)/[parallel](macro@parallel) and another with [file_serial](macro@file_serial)/[file_parallel](macro@file_parallel)
