@@ -93,6 +93,7 @@ mod tests {
         thread,
         time::Duration,
     };
+    use wasm_bindgen_test::wasm_bindgen_test;
 
     lazy_static! {
         static ref THREAD_ORDERINGS: Arc<Mutex<Vec<bool>>> = Arc::new(Mutex::new(Vec::new()));
@@ -360,4 +361,12 @@ mod tests {
     async fn async_attribute_works_with_return() -> Result<(), ()> {
         Ok(())
     }
+
+    #[wasm_bindgen_test]
+    #[serial]
+    async fn wasm_works_first() {}
+
+    #[serial]
+    #[wasm_bindgen_test]
+    async fn wasm_works_second() {}
 }
