@@ -400,7 +400,7 @@ where
                 quote! {
                     async fn #temp_fn () -> #ret
                         #block
-                    
+
                     #(#attrs)
                     *
                     #vis async fn #name () -> #ret {
@@ -592,7 +592,7 @@ mod tests {
         };
         let stream = local_serial_core(attrs.into(), input);
         let compare = quote! {
-            async fn _foo_internal () { } 
+            async fn _foo_internal () { }
             async fn foo () {
                 serial_test::local_async_serial_core("",  :: std :: option :: Option :: None, _foo_internal()).await;
             }
@@ -616,7 +616,6 @@ mod tests {
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
     }
-
 
     #[test]
     fn test_file_serial() {

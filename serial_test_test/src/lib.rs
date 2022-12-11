@@ -178,7 +178,7 @@ mod tests {
     #[tokio::test]
     async fn test_async_serial_no_arg_serial_first() {
         init();
-    }    
+    }
 
     #[serial]
     #[actix_rt::test]
@@ -355,8 +355,7 @@ mod tests {
 
     // Note, not actually a test as such, just a "can you wrap serial functions" compile-time check
     #[serial]
-    async fn async_attribute_works() {
-    }
+    async fn async_attribute_works() {}
     #[serial]
     async fn async_attribute_works_with_return() -> Result<(), ()> {
         Ok(())
