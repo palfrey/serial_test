@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 use log::debug;
 use std::{
     sync::{atomic::AtomicU32, Arc},
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 pub(crate) struct UniqueReentrantMutex {
@@ -55,7 +55,7 @@ impl Default for UniqueReentrantMutex {
     }
 }
 
-pub(crate) fn check_new_key(name: &str, max_wait: Option<Duration>) {
+pub(crate) fn check_new_key(name: &str) {
     let start = Instant::now();
     loop {
         #[cfg(all(feature = "logging"))]
@@ -84,12 +84,5 @@ pub(crate) fn check_new_key(name: &str, max_wait: Option<Duration>) {
 
         // If the try_entry fails, then go around the loop again
         // Odds are another test was also locking on the write and has now written the key
-
-        if let Some(max_wait) = max_wait {
-            let duration = start.elapsed();
-            if duration > max_wait {
-                panic!("Timeout waiting for '{}' {:?}", name, duration);
-            }
-        }
     }
 }
