@@ -109,14 +109,6 @@ mod tests {
     use serial_test::{file_parallel, file_serial};
 
     #[test]
-    #[serial(timeout_key, timeout_ms = 60000)]
-    fn demo_timeout_with_key() {}
-
-    #[test]
-    #[serial(timeout_ms = 60000)]
-    fn demo_timeout() {}
-
-    #[test]
     #[serial]
     fn test_serial_no_arg() {
         init();
