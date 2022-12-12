@@ -1,12 +1,11 @@
 use crate::rwlock::{Locks, MutexGuardWrapper};
 use dashmap::{try_result::TryResult, DashMap};
 use lazy_static::lazy_static;
-#[cfg(all(feature = "logging"))]
+#[cfg(feature = "logging")]
 use log::debug;
-use std::{
-    sync::{atomic::AtomicU32, Arc},
-    time::Instant,
-};
+use std::sync::{atomic::AtomicU32, Arc};
+#[cfg(feature = "logging")]
+use std::time::Instant;
 
 pub(crate) struct UniqueReentrantMutex {
     locks: Locks,
@@ -56,9 +55,10 @@ impl Default for UniqueReentrantMutex {
 }
 
 pub(crate) fn check_new_key(name: &str) {
+    #[cfg(feature = "logging")]
     let start = Instant::now();
     loop {
-        #[cfg(all(feature = "logging"))]
+        #[cfg(feature = "logging")]
         {
             let duration = start.elapsed();
             debug!("Waiting for '{}' {:?}", name, duration);
