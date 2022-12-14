@@ -33,7 +33,7 @@ default = ["logging", "async"]
 logging = ["log"]
 
 ## Enables async features (and requires the `futures` package)
-async = ["futures"]
+async = ["futures", "serial_test_derive/async"]
 
 ## The file_locks feature unlocks the `file_serial`/`file_parallel` macros (and requires the `fslock` package)
 file_locks = ["fslock"]

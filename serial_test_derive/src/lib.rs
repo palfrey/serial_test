@@ -8,7 +8,6 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
-use proc_macro_error::{abort_call_site, proc_macro_error};
 use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use std::ops::Deref;
 
@@ -64,7 +63,6 @@ use std::ops::Deref;
 ///
 /// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) are supported
 #[proc_macro_attribute]
-#[proc_macro_error]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     local_serial_core(attr.into(), input.into()).into()
 }
@@ -98,7 +96,6 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// Note that this has zero effect on [file_serial](macro@file_serial) tests, as that uses a different
 /// serialisation mechanism. For that, you want [file_parallel](macro@file_parallel).
 #[proc_macro_attribute]
-#[proc_macro_error]
 pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
     local_parallel_core(attr.into(), input.into()).into()
 }
@@ -139,7 +136,6 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// ````
 /// Note that in this case you need to specify the `name` arg as well (as per [serial](macro@serial)). The path defaults to a reasonable temp directory for the OS if not specified.
 #[proc_macro_attribute]
-#[proc_macro_error]
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     fs_serial_core(attr.into(), input.into()).into()
@@ -184,7 +180,6 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// ````
 /// Note that in this case you need to specify the `name` arg as well (as per [parallel](macro@parallel)). The path defaults to a reasonable temp directory for the OS if not specified.
 #[proc_macro_attribute]
-#[proc_macro_error]
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
     fs_parallel_core(attr.into(), input.into()).into()
@@ -338,17 +333,6 @@ where
         .filter(|at| {
             if let Ok(m) = at.parse_meta() {
                 let path = m.path();
-                if asyncness.is_some()
-                    && path.segments.len() == 2
-                    && path.segments[1].ident == "test"
-                {
-                    // We assume that any 2-part attribute with the second part as "test" on an async function
-                    // is the "do this test with reactor" wrapper. This is true for actix, tokio and async_std.
-                    abort_call_site!(
-                        "Found async test attribute after serial/parallel, which will break"
-                    );
-                }
-
                 // we skip ignore/should_panic because the test framework already deals with it
                 !(path.is_ident("ignore") || path.is_ident("should_panic"))
             } else {
@@ -360,11 +344,15 @@ where
         match asyncness {
             Some(_) => {
                 let fnname = format_ident!("{}_async_{}_core_with_return", prefix, kind);
+                let temp_fn = format_ident!("_{}_internal", name);
                 quote! {
+                    async fn #temp_fn () -> #ret
+                        #block
+
                     #(#attrs)
                     *
                     #vis async fn #name () -> #ret {
-                        serial_test::#fnname(#(#args ),*, || async #block ).await;
+                        serial_test::#fnname(#(#args ),*, #temp_fn()).await
                     }
                 }
             }
@@ -383,11 +371,15 @@ where
         match asyncness {
             Some(_) => {
                 let fnname = format_ident!("{}_async_{}_core", prefix, kind);
+                let temp_fn = format_ident!("_{}_internal", name);
                 quote! {
+                    async fn #temp_fn ()
+                        #block
+
                     #(#attrs)
                     *
                     #vis async fn #name () {
-                        serial_test::#fnname(#(#args ),*, || async #block ).await;
+                        serial_test::#fnname(#(#args ),*, #temp_fn()).await;
                     }
                 }
             }
@@ -499,8 +491,9 @@ mod tests {
         };
         let stream = local_serial_core(attrs.into(), input);
         let compare = quote! {
+            async fn _foo_internal () { }
             async fn foo () {
-                serial_test::local_async_serial_core("", || async {} ).await;
+                serial_test::local_async_serial_core("", _foo_internal() ).await;
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
@@ -515,20 +508,12 @@ mod tests {
         };
         let stream = local_serial_core(attrs.into(), input);
         let compare = quote! {
+            async fn _foo_internal ()  -> Result<(), ()> { Ok(()) }
             async fn foo () -> Result<(), ()> {
-                serial_test::local_async_serial_core_with_return("", :: std :: option :: Option :: None, || async { Ok(()) } ).await;
+                serial_test::local_async_serial_core_with_return("", _foo_internal() ).await
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
-    }
-
-    // 1.54 needed for https://github.com/rust-lang/rust/commit/9daf546b77dbeab7754a80d7336cd8d00c6746e4 change in note message
-    #[rustversion::since(1.54)]
-    #[test]
-    #[cfg(feature = "async")]
-    fn test_serial_async_before_wrapper() {
-        let t = trybuild::TestCases::new();
-        t.compile_fail("tests/broken/test_serial_async_before_wrapper.rs");
     }
 
     #[test]

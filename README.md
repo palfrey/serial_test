@@ -4,7 +4,7 @@
 [![Docs](https://docs.rs/serial_test/badge.svg)](https://docs.rs/serial_test/)
 [![MIT license](https://img.shields.io/crates/l/serial_test.svg)](./LICENSE)
 [![Build Status](https://github.com/palfrey/serial_test/workflows/Continuous%20integration/badge.svg?branch=main)](https://github.com/palfrey/serial_test/actions)
-[![MSRV: 1.51.0](https://flat.badgen.net/badge/MSRV/1.51.0/purple)](https://blog.rust-lang.org/2021/03/25/Rust-1.51.0.html)
+[![MSRV: 1.56.0](https://flat.badgen.net/badge/MSRV/1.56.0/purple)](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html)
 
 `serial_test` allows for the creation of serialised Rust tests using the `serial` attribute
 e.g.
@@ -29,15 +29,12 @@ async fn test_serial_another() {
 ```
 Multiple tests with the `serial` attribute are guaranteed to be executed in serial. Ordering of the tests is not guaranteed however. Other tests with the `parallel` attribute may run at the same time as each other, but not at the same time as a test with `serial`. Tests with neither attribute may run at any time and no guarantees are made about their timing!
 
-Note that if you're using an async test reactor attribute (e.g. `tokio::test` or `actix_rt::test`) then they should be listed *before* `serial`, otherwise we
-don't get an async function and things break. There's now an error for this case to improve debugging.
-
 For cases like doctests and integration tests where the tests are run as separate processes, we also support `file_serial`, with
 similar properties but based off file locking. Note that there are no guarantees about one test with `serial` and another with 
 `file_serial` as they lock using different methods, and `parallel` doesn't support `file_serial` yet (patches welcomed!).
 
 ## Usage
-We require at least Rust 1.51. Upgrades to this will require at least a minor version bump (while in 0.x versions) and a major version bump post-1.0.
+We require at least Rust 1.56. Upgrades to this will require at least a minor version bump (while in 0.x versions) and a major version bump post-1.0.
 
 Add to your Cargo.toml
 ```toml
