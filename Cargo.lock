@@ -431,7 +431,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "serial_test"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "dashmap",
  "document-features",
@@ -447,7 +447,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test_derive"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "env_logger",
  "proc-macro2",
@@ -457,7 +457,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test_test"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "actix-rt",
  "env_logger",
