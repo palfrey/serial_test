@@ -34,7 +34,7 @@ similar properties but based off file locking. Note that there are no guarantees
 `file_serial` as they lock using different methods, and `parallel` doesn't support `file_serial` yet (patches welcomed!).
 
 ## Usage
-We require at least Rust 1.51. Upgrades to this will require at least a minor version bump (while in 0.x versions) and a major version bump post-1.0.
+We require at least Rust 1.51. Upgrades to this will require at a major version bump.
 
 Add to your Cargo.toml
 ```toml
