@@ -327,19 +327,7 @@ where
         syn::ReturnType::Type(_rarrow, ref box_type) => Some(box_type.deref()),
     };
     let block = ast.block;
-    let attrs: Vec<syn::Attribute> = ast
-        .attrs
-        .into_iter()
-        .filter(|at| {
-            if let Ok(m) = at.parse_meta() {
-                let path = m.path();
-                // we skip ignore/should_panic because the test framework already deals with it
-                !(path.is_ident("ignore") || path.is_ident("should_panic"))
-            } else {
-                true
-            }
-        })
-        .collect();
+    let attrs: Vec<syn::Attribute> = ast.attrs.into_iter().collect();
     if let Some(ret) = return_type {
         match asyncness {
             Some(_) => {
@@ -461,7 +449,7 @@ mod tests {
     }
 
     #[test]
-    fn test_stripped_attributes() {
+    fn test_other_attributes() {
         let _ = env_logger::builder().is_test(true).try_init();
         let attrs = proc_macro2::TokenStream::new();
         let input = quote! {
@@ -474,6 +462,8 @@ mod tests {
         let stream = local_serial_core(attrs.into(), input);
         let compare = quote! {
             #[test]
+            #[ignore]
+            #[should_panic(expected = "Testing panic")]
             #[something_else]
             fn foo () {
                 serial_test::local_serial_core("",  || {} );
