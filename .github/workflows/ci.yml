@@ -80,4 +80,4 @@ jobs:
           toolchain: nightly
       - name: Remove lock
         run: rm Cargo.lock
-      - run: cargo build minimal-versions
+      - run: cargo build -Z minimal-versions
