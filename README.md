@@ -4,7 +4,7 @@
 [![Docs](https://docs.rs/serial_test/badge.svg)](https://docs.rs/serial_test/)
 [![MIT license](https://img.shields.io/crates/l/serial_test.svg)](./LICENSE)
 [![Build Status](https://github.com/palfrey/serial_test/workflows/Continuous%20integration/badge.svg?branch=main)](https://github.com/palfrey/serial_test/actions)
-[![MSRV: 1.51.0](https://flat.badgen.net/badge/MSRV/1.51.0/purple)](https://blog.rust-lang.org/2021/03/25/Rust-1.51.0.html)
+[![MSRV: 1.68.2](https://flat.badgen.net/badge/MSRV/1.68.2/purple)](https://blog.rust-lang.org/2023/03/28/Rust-1.68.2.html)
 
 `serial_test` allows for the creation of serialised Rust tests using the `serial` attribute
 e.g.
@@ -34,7 +34,7 @@ similar properties but based off file locking. Note that there are no guarantees
 `file_serial` as they lock using different methods, and `parallel` doesn't support `file_serial` yet (patches welcomed!).
 
 ## Usage
-We require at least Rust 1.51. Upgrades to this will require at a major version bump.
+The minimum supported Rust version here is 1.68.2. Note this is minimum _supported_, as it may well compile with lower versions, but they're not supported at all. Upgrades to this will require at a major version bump. 1.x supports 1.51 if you need a lower version than that.
 
 Add to your Cargo.toml
 ```toml
@@ -42,11 +42,6 @@ Add to your Cargo.toml
 serial_test = "*"
 ```
 
-plus `use serial_test::serial;` (for Rust 2018) or
-```rust
-#[macro_use]
-extern crate serial_test;
-```
-for earlier versions.
+plus `use serial_test::serial;` in your imports section.
 
 You can then either add `#[serial]` or `#[serial(some_text)]` to tests as required.

@@ -14,11 +14,11 @@ proc-macro = true
 
 [dependencies]
 quote = "1.0"
-syn = { version="1.0", features=["full"] }
+syn = { version="2", features=["full"] }
 proc-macro2 = "1.0"
 
 [dev-dependencies]
-env_logger = "0.9"
+env_logger = "0.10"
 
 [features]
 async = []
