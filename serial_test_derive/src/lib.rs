@@ -470,7 +470,7 @@ mod tests {
 
     #[test]
     fn test_file_serial() {
-        let attrs = vec![TokenTree::Ident(format_ident!("foo"))];
+        let attrs: Vec<_> = quote! { foo }.into_iter().collect();
         let input = quote! {
             #[test]
             fn foo() {}
@@ -490,11 +490,7 @@ mod tests {
 
     #[test]
     fn test_file_serial_with_path() {
-        let attrs = vec![
-            TokenTree::Ident(format_ident!("foo")),
-            TokenTree::Punct(Punct::new(',', Spacing::Alone)),
-            TokenTree::Literal(Literal::string("bar_path")),
-        ];
+        let attrs: Vec<_> = quote! { foo, bar_path }.into_iter().collect();
         let input = quote! {
             #[test]
             fn foo() {}
@@ -514,7 +510,7 @@ mod tests {
 
     #[test]
     fn test_single_attr() {
-        let attrs = vec![TokenTree::Ident(format_ident!("one"))];
+        let attrs: Vec<_> = quote! { one}.into_iter().collect();
         let input = quote! {
             #[test]
             fn single() {}
@@ -534,11 +530,7 @@ mod tests {
 
     #[test]
     fn test_multiple_attr() {
-        let attrs = vec![
-            TokenTree::Ident(format_ident!("one")),
-            TokenTree::Punct(Punct::new(',', Spacing::Alone)),
-            TokenTree::Ident(format_ident!("two")),
-        ];
+        let attrs: Vec<_> = quote! { one, two }.into_iter().collect();
         let input = quote! {
             #[test]
             fn multiple() {}
