@@ -7,9 +7,11 @@ use std::panic;
 
 #[doc(hidden)]
 pub fn local_parallel_core_with_return<E>(
-    name: &str,
+    names: Vec<&str>,
+    _path: Option<&str>,
     function: fn() -> Result<(), E>,
 ) -> Result<(), E> {
+    let name = names.first().expect("names length > 0").to_owned();
     check_new_key(name);
 
     let lock = LOCKS.get(name).unwrap();
@@ -25,7 +27,8 @@ pub fn local_parallel_core_with_return<E>(
 }
 
 #[doc(hidden)]
-pub fn local_parallel_core(name: &str, function: fn()) {
+pub fn local_parallel_core(names: Vec<&str>, _path: Option<&str>, function: fn()) {
+    let name = names.first().expect("names length > 0").to_owned();
     check_new_key(name);
 
     let lock = LOCKS.get(name).unwrap();
@@ -42,9 +45,11 @@ pub fn local_parallel_core(name: &str, function: fn()) {
 #[doc(hidden)]
 #[cfg(feature = "async")]
 pub async fn local_async_parallel_core_with_return<E>(
-    name: &str,
+    names: Vec<&str>,
+    _path: Option<&str>,
     fut: impl std::future::Future<Output = Result<(), E>> + panic::UnwindSafe,
 ) -> Result<(), E> {
+    let name = names.first().expect("names length > 0").to_owned();
     check_new_key(name);
 
     let lock = LOCKS.get(name).unwrap();
@@ -62,9 +67,11 @@ pub async fn local_async_parallel_core_with_return<E>(
 #[doc(hidden)]
 #[cfg(feature = "async")]
 pub async fn local_async_parallel_core(
-    name: &str,
+    names: Vec<&str>,
+    _path: Option<&str>,
     fut: impl std::future::Future<Output = ()> + panic::UnwindSafe,
 ) {
+    let name = names.first().expect("names length > 0").to_owned();
     check_new_key(name);
 
     let lock = LOCKS.get(name).unwrap();
@@ -87,7 +94,7 @@ mod tests {
     #[test]
     fn unlock_on_assert_sync_without_return() {
         let _ = panic::catch_unwind(|| {
-            local_parallel_core("unlock_on_assert_sync_without_return", || {
+            local_parallel_core(vec!["unlock_on_assert_sync_without_return"], None, || {
                 assert!(false);
             })
         });
@@ -104,7 +111,8 @@ mod tests {
     fn unlock_on_assert_sync_with_return() {
         let _ = panic::catch_unwind(|| {
             local_parallel_core_with_return(
-                "unlock_on_assert_sync_with_return",
+                vec!["unlock_on_assert_sync_with_return"],
+                None,
                 || -> Result<(), Error> {
                     assert!(false);
                     Ok(())
@@ -127,7 +135,12 @@ mod tests {
             assert!(false);
         }
         async fn call_serial_test_fn() {
-            local_async_parallel_core("unlock_on_assert_async_without_return", demo_assert()).await
+            local_async_parallel_core(
+                vec!["unlock_on_assert_async_without_return"],
+                None,
+                demo_assert(),
+            )
+            .await
         }
         // as per https://stackoverflow.com/a/66529014/320546
         let _ = panic::catch_unwind(|| {
@@ -155,7 +168,8 @@ mod tests {
         #[allow(unused_must_use)]
         async fn call_serial_test_fn() {
             local_async_parallel_core_with_return(
-                "unlock_on_assert_async_with_return",
+                vec!["unlock_on_assert_async_with_return"],
+                None,
                 demo_assert(),
             )
             .await;

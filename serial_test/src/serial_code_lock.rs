@@ -3,45 +3,69 @@
 use crate::code_lock::{check_new_key, LOCKS};
 
 #[doc(hidden)]
-pub fn local_serial_core_with_return<E>(
-    name: &str,
-    function: fn() -> Result<(), E>,
-) -> Result<(), E> {
-    check_new_key(name);
+macro_rules! core_internal {
+    ($fn: ident, $names: ident, $path: ident, $function: ident, $block: expr) => {{
+        let name = $names.first().expect("names length > 0").to_owned();
+        check_new_key(name);
 
-    let unlock = LOCKS.get(name).expect("key to be set");
-    // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.lock();
-    function()
+        let unlock = LOCKS.get(name).expect("key to be set");
+        // _guard needs to be named to avoid being instant dropped
+        let _guard = unlock.lock();
+
+        if $names.len() > 1 {
+            let mut new_names = $names.clone();
+            new_names.remove(0);
+            $fn(new_names, $path, $function)
+        } else {
+            $block()
+        }
+    }};
 }
 
 #[doc(hidden)]
-pub fn local_serial_core(name: &str, function: fn()) {
-    check_new_key(name);
+pub fn local_serial_core_with_return<E>(
+    names: Vec<&str>,
+    path: Option<String>,
+    function: fn() -> Result<(), E>,
+) -> Result<(), E> {
+    core_internal!(local_serial_core_with_return, names, path, function, || {
+        function()
+    })
+}
 
-    let unlock = LOCKS.get(name).expect("key to be set");
-    // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.lock();
-    function();
+#[doc(hidden)]
+pub fn local_serial_core(names: Vec<&str>, path: Option<&str>, function: fn()) {
+    core_internal!(local_serial_core, names, path, function, || {
+        function();
+    });
 }
 
 #[doc(hidden)]
 #[cfg(feature = "async")]
 pub async fn local_async_serial_core_with_return<E>(
-    name: &str,
-    fut: impl std::future::Future<Output = Result<(), E>>,
+    names: Vec<&str>,
+    _path: Option<&str>,
+    fut: impl std::future::Future<Output = Result<(), E>> + std::marker::Send,
 ) -> Result<(), E> {
-    check_new_key(name);
-
-    let unlock = LOCKS.get(name).expect("key to be set");
-    // _guard needs to be named to avoid being instant dropped
-    let _guard = unlock.lock();
+    let unlocks: Vec<_> = names
+        .into_iter()
+        .map(|name| {
+            check_new_key(name);
+            LOCKS.get(name).expect("key to be set")
+        })
+        .collect();
+    let _guards = unlocks.iter().map(|unlock| unlock.lock());
     fut.await
 }
 
 #[doc(hidden)]
 #[cfg(feature = "async")]
-pub async fn local_async_serial_core(name: &str, fut: impl std::future::Future<Output = ()>) {
+pub async fn local_async_serial_core(
+    names: Vec<&str>,
+    _path: Option<&str>,
+    fut: impl std::future::Future<Output = ()>,
+) {
+    let name = names.first().expect("names length > 0").to_owned();
     check_new_key(name);
 
     let unlock = LOCKS.get(name).expect("key to be set");
@@ -106,7 +130,7 @@ mod tests {
     #[test]
     fn unlock_on_assert() {
         let _ = std::panic::catch_unwind(|| {
-            local_serial_core("assert", || {
+            local_serial_core(vec!["assert"], None, || {
                 assert!(false);
             })
         });
