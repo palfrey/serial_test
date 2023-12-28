@@ -7,7 +7,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::TokenTree;
+use proc_macro2::{Literal, TokenTree};
 use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use std::ops::Deref;
 
@@ -123,13 +123,13 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// It also supports an optional `path` arg e.g
 /// ````
 /// #[test]
-/// #[file_serial(key, "/tmp/foo")]
+/// #[file_serial(key, path => "/tmp/foo")]
 /// fn test_serial_one() {
 ///   // Do things
 /// }
 ///
 /// #[test]
-/// #[file_serial(key, "/tmp/foo")]
+/// #[file_serial(key, path => "/tmp/foo")]
 /// fn test_serial_another() {
 ///   // Do things
 /// }
@@ -167,13 +167,13 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// It also supports an optional `path` arg e.g
 /// ````
 /// #[test]
-/// #[file_parallel(key, "/tmp/foo")]
+/// #[file_parallel(key, path => "/tmp/foo")]
 /// fn test_parallel_one() {
 ///   // Do things
 /// }
 ///
 /// #[test]
-/// #[file_parallel(key, "/tmp/foo")]
+/// #[file_parallel(key, path => "/tmp/foo")]
 /// fn test_parallel_another() {
 ///   // Do things
 /// }
@@ -204,26 +204,58 @@ struct Config {
     path: QuoteOption<String>,
 }
 
+fn string_from_literal(literal: Literal) -> String {
+    let string_literal = literal.to_string();
+    if !string_literal.starts_with('\"') || !string_literal.ends_with('\"') {
+        panic!("Expected a string literal, got '{}'", string_literal);
+    }
+    // Hacky way of getting a string without the enclosing quotes
+    string_literal[1..string_literal.len() - 1].to_string()
+}
+
 fn get_config(attr: proc_macro2::TokenStream) -> Config {
     let mut attrs = attr.into_iter().collect::<Vec<TokenTree>>();
     let mut raw_args: Vec<String> = Vec::new();
+    let mut in_path: bool = false;
+    let mut path: Option<String> = None;
     while !attrs.is_empty() {
         match attrs.remove(0) {
+            TokenTree::Ident(id) if id.to_string().eq_ignore_ascii_case("path") => {
+                in_path = true;
+            }
             TokenTree::Ident(id) => {
                 let name = id.to_string();
                 raw_args.push(name);
             }
-            TokenTree::Literal(literal) => {
-                let string_literal = literal.to_string();
-                if !string_literal.starts_with('\"') || !string_literal.ends_with('\"') {
-                    panic!("Expected a string literal, got '{}'", string_literal);
-                }
-                // Hacky way of getting a string without the enclosing quotes
-                raw_args.push(string_literal[1..string_literal.len() - 1].to_string());
-            }
             x => {
-                panic!("Expected either strings or literals as args, not {}", x);
+                panic!("Expected literal as key args, not {}", x);
             }
+        }
+        if in_path {
+            if attrs.len() < 3 {
+                panic!("Expected a '=> <path>' after 'path'");
+            }
+            match attrs.remove(0) {
+                TokenTree::Punct(p) if p.as_char() == '=' => {}
+                x => {
+                    panic!("Expected = after path, not {}", x);
+                }
+            }
+            match attrs.remove(0) {
+                TokenTree::Punct(p) if p.as_char() == '>' => {}
+                x => {
+                    panic!("Expected > after path, not {}", x);
+                }
+            }
+            match attrs.remove(0) {
+                TokenTree::Literal(literal) => {
+                    path = Some(string_from_literal(literal));
+                }
+                x => {
+                    panic!("Expected literals as path arg, not {}", x);
+                }
+            }
+            in_path = false;
         }
         if !attrs.is_empty() {
             match attrs.remove(0) {
@@ -237,9 +269,10 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
     if raw_args.is_empty() {
         raw_args.push(String::new());
     }
+    raw_args.sort(); // So the keys are always requested in the same order. Avoids dining philosopher issues.
     Config {
         names: raw_args,
-        path: QuoteOption(None),
+        path: QuoteOption(path),
     }
 }
 
@@ -372,8 +405,7 @@ fn parallel_setup(
 #[cfg(test)]
 mod tests {
     use super::{fs_serial_core, local_serial_core};
-    use proc_macro2::{Literal, Punct, Spacing, TokenTree};
-    use quote::{format_ident, quote};
+    use quote::quote;
     use std::iter::FromIterator;
 
     #[test]
@@ -490,7 +522,7 @@ mod tests {
 
     #[test]
     fn test_file_serial_with_path() {
-        let attrs: Vec<_> = quote! { foo, bar_path }.into_iter().collect();
+        let attrs: Vec<_> = quote! { foo, path => "bar_path" }.into_iter().collect();
         let input = quote! {
             #[test]
             fn foo() {}
@@ -530,7 +562,7 @@ mod tests {
 
     #[test]
     fn test_multiple_attr() {
-        let attrs: Vec<_> = quote! { one, two }.into_iter().collect();
+        let attrs: Vec<_> = quote! { two, one }.into_iter().collect();
         let input = quote! {
             #[test]
             fn multiple() {}
