@@ -23,11 +23,11 @@ pub fn local_parallel_core_with_return<E>(
     _path: Option<&str>,
     function: fn() -> Result<(), E>,
 ) -> Result<(), E> {
-    let unlocks = get_locks(names);
+    let locks = get_locks(names);
 
-    unlocks.iter().map(|unlock| unlock.start_parallel());
+    locks.iter().for_each(|lock| lock.start_parallel());
     let res = panic::catch_unwind(function);
-    unlocks.iter().map(|unlock| unlock.end_parallel());
+    locks.iter().for_each(|lock| lock.end_parallel());
     match res {
         Ok(ret) => ret,
         Err(err) => {
@@ -38,12 +38,12 @@ pub fn local_parallel_core_with_return<E>(
 
 #[doc(hidden)]
 pub fn local_parallel_core(names: Vec<&str>, _path: Option<&str>, function: fn()) {
-    let unlocks = get_locks(names);
-    unlocks.iter().map(|unlock| unlock.start_parallel());
+    let locks = get_locks(names);
+    locks.iter().for_each(|lock| lock.start_parallel());
     let res = panic::catch_unwind(|| {
         function();
     });
-    unlocks.iter().map(|unlock| unlock.end_parallel());
+    locks.iter().for_each(|lock| lock.end_parallel());
     if let Err(err) = res {
         panic::resume_unwind(err);
     }
@@ -56,10 +56,10 @@ pub async fn local_async_parallel_core_with_return<E>(
     _path: Option<&str>,
     fut: impl std::future::Future<Output = Result<(), E>> + panic::UnwindSafe,
 ) -> Result<(), E> {
-    let unlocks = get_locks(names);
-    unlocks.iter().map(|unlock| unlock.start_parallel());
+    let locks = get_locks(names);
+    locks.iter().for_each(|lock| lock.start_parallel());
     let res = fut.catch_unwind().await;
-    unlocks.iter().map(|unlock| unlock.end_parallel());
+    locks.iter().for_each(|lock| lock.end_parallel());
     match res {
         Ok(ret) => ret,
         Err(err) => {
@@ -75,10 +75,10 @@ pub async fn local_async_parallel_core(
     _path: Option<&str>,
     fut: impl std::future::Future<Output = ()> + panic::UnwindSafe,
 ) {
-    let unlocks = get_locks(names);
-    unlocks.iter().map(|unlock| unlock.start_parallel());
+    let locks = get_locks(names);
+    locks.iter().for_each(|lock| lock.start_parallel());
     let res = fut.catch_unwind().await;
-    unlocks.iter().map(|unlock| unlock.end_parallel());
+    locks.iter().for_each(|lock| lock.end_parallel());
     if let Err(err) = res {
         panic::resume_unwind(err);
     }

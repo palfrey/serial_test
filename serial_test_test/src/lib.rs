@@ -221,7 +221,7 @@ mod tests {
 
     #[cfg(all(feature = "file_locks", not(windows)))]
     #[test]
-    #[file_serial(test, "/tmp/test")]
+    #[file_serial(test, path => "/tmp/test")]
     fn test_file_with_path() {}
 
     #[test]

@@ -3,15 +3,19 @@ use std::panic;
 #[cfg(feature = "async")]
 use futures::FutureExt;
 
-use crate::file_lock::make_lock_for_name_and_path;
+use crate::file_lock::get_locks;
 
 #[doc(hidden)]
-pub fn fs_parallel_core(name: &str, path: Option<&str>, function: fn()) {
-    make_lock_for_name_and_path(name, path).start_parallel();
+pub fn fs_parallel_core(names: Vec<&str>, path: Option<&str>, function: fn()) {
+    get_locks(&names, path)
+        .iter_mut()
+        .for_each(|lock| lock.start_parallel());
     let res = panic::catch_unwind(|| {
         function();
     });
-    make_lock_for_name_and_path(name, path).end_parallel();
+    get_locks(&names, path)
+        .into_iter()
+        .for_each(|lock| lock.end_parallel());
     if let Err(err) = res {
         panic::resume_unwind(err);
     }
@@ -19,13 +23,17 @@ pub fn fs_parallel_core(name: &str, path: Option<&str>, function: fn()) {
 
 #[doc(hidden)]
 pub fn fs_parallel_core_with_return<E>(
-    name: &str,
+    names: Vec<&str>,
     path: Option<&str>,
     function: fn() -> Result<(), E>,
 ) -> Result<(), E> {
-    make_lock_for_name_and_path(name, path).start_parallel();
+    get_locks(&names, path)
+        .iter_mut()
+        .for_each(|lock| lock.start_parallel());
     let res = panic::catch_unwind(function);
-    make_lock_for_name_and_path(name, path).end_parallel();
+    get_locks(&names, path)
+        .into_iter()
+        .for_each(|lock| lock.end_parallel());
     match res {
         Ok(ret) => ret,
         Err(err) => {
@@ -37,13 +45,17 @@ pub fn fs_parallel_core_with_return<E>(
 #[doc(hidden)]
 #[cfg(feature = "async")]
 pub async fn fs_async_parallel_core_with_return<E>(
-    name: &str,
+    names: Vec<&str>,
     path: Option<&str>,
     fut: impl std::future::Future<Output = Result<(), E>> + panic::UnwindSafe,
 ) -> Result<(), E> {
-    make_lock_for_name_and_path(name, path).start_parallel();
+    get_locks(&names, path)
+        .iter_mut()
+        .for_each(|lock| lock.start_parallel());
     let res = fut.catch_unwind().await;
-    make_lock_for_name_and_path(name, path).end_parallel();
+    get_locks(&names, path)
+        .into_iter()
+        .for_each(|lock| lock.end_parallel());
     match res {
         Ok(ret) => ret,
         Err(err) => {
@@ -55,13 +67,18 @@ pub async fn fs_async_parallel_core_with_return<E>(
 #[doc(hidden)]
 #[cfg(feature = "async")]
 pub async fn fs_async_parallel_core(
-    name: &str,
+    names: Vec<&str>,
     path: Option<&str>,
     fut: impl std::future::Future<Output = ()> + panic::UnwindSafe,
 ) {
-    make_lock_for_name_and_path(name, path).start_parallel();
+    get_locks(&names, path)
+        .iter_mut()
+        .for_each(|lock| lock.start_parallel());
+
     let res = fut.catch_unwind().await;
-    make_lock_for_name_and_path(name, path).end_parallel();
+    get_locks(&names, path)
+        .into_iter()
+        .for_each(|lock| lock.end_parallel());
     if let Err(err) = res {
         panic::resume_unwind(err);
     }
@@ -88,7 +105,7 @@ mod tests {
         let lock_path = path_for_name("unlock_on_assert_sync_without_return");
         let _ = panic::catch_unwind(|| {
             fs_parallel_core(
-                "unlock_on_assert_sync_without_return",
+                vec!["unlock_on_assert_sync_without_return"],
                 Some(&lock_path),
                 || {
                     assert!(false);
@@ -103,7 +120,7 @@ mod tests {
         let lock_path = path_for_name("unlock_on_assert_sync_with_return");
         let _ = panic::catch_unwind(|| {
             fs_parallel_core_with_return(
-                "unlock_on_assert_sync_with_return",
+                vec!["unlock_on_assert_sync_with_return"],
                 Some(&lock_path),
                 || -> Result<(), Error> {
                     assert!(false);
@@ -123,7 +140,7 @@ mod tests {
         }
         async fn call_serial_test_fn(lock_path: &str) {
             fs_async_parallel_core(
-                "unlock_on_assert_async_without_return",
+                vec!["unlock_on_assert_async_without_return"],
                 Some(&lock_path),
                 demo_assert(),
             )
@@ -152,7 +169,7 @@ mod tests {
         #[allow(unused_must_use)]
         async fn call_serial_test_fn(lock_path: &str) {
             fs_async_parallel_core_with_return(
-                "unlock_on_assert_async_with_return",
+                vec!["unlock_on_assert_async_with_return"],
                 Some(&lock_path),
                 demo_assert(),
             )

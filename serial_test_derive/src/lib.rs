@@ -228,7 +228,10 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
                 raw_args.push(name);
             }
             x => {
-                panic!("Expected literal as key args, not {}", x);
+                panic!(
+                    "Expected literal as key args (or a 'path => '\"foo\"'), not {}",
+                    x
+                );
             }
         }
         if in_path {
@@ -515,6 +518,26 @@ mod tests {
             #[test]
             fn foo () {
                 serial_test::fs_serial_core(vec!["foo"], ::std::option::Option::None, || {} );
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
+
+    #[test]
+    fn test_file_serial_no_args() {
+        let attrs = proc_macro2::TokenStream::new();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = fs_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                serial_test::fs_serial_core(vec![""], ::std::option::Option::None, || {} );
             }
         };
         assert_eq!(format!("{}", compare), format!("{}", stream));
