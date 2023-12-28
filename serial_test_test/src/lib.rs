@@ -115,6 +115,12 @@ mod tests {
     }
 
     #[test]
+    #[serial(one, two)]
+    fn test_serial_multi_arg() {
+        init();
+    }
+
+    #[test]
     #[serial(alpha)]
     fn test_serial_1() {
         test_fn(1)
@@ -223,6 +229,11 @@ mod tests {
     #[test]
     #[file_serial(test, path => "/tmp/test")]
     fn test_file_with_path() {}
+
+    #[cfg(all(feature = "file_locks", not(windows)))]
+    #[test]
+    #[file_serial(path => "/tmp/test")]
+    fn test_file_with_path_and_no_key() {}
 
     #[test]
     #[serial(test_key)]

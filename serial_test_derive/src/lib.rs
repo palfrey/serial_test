@@ -57,9 +57,15 @@ use std::ops::Deref;
 /// fn test_serial_fourth() {
 ///   // Do things
 /// }
+///
+/// #[test]
+/// #[serial(something, other)]
+/// fn test_serial_fifth() {
+///   // Do things, eventually
+/// }
 /// ````
 /// `test_serial_one` and `test_serial_another` will be executed in serial, as will `test_serial_third` and `test_serial_fourth`
-/// but neither sequence will be blocked by the other
+/// but neither sequence will be blocked by the other. `test_serial_fifth` is blocked by tests in either sequence.
 ///
 /// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) are supported
 #[proc_macro_attribute]
@@ -120,10 +126,10 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// as they lock using different methods, and [file_serial](macro@file_serial) does not support nested serialised tests, but otherwise acts
 /// like [serial](macro@serial).
 ///
-/// It also supports an optional `path` arg e.g
+/// It also supports an optional `path` arg as well as keys
 /// ````
 /// #[test]
-/// #[file_serial(key, path => "/tmp/foo")]
+/// #[file_serial(key)]
 /// fn test_serial_one() {
 ///   // Do things
 /// }
@@ -134,7 +140,7 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 ///   // Do things
 /// }
 /// ````
-/// Note that in this case you need to specify the `name` arg as well (as per [serial](macro@serial)). The path defaults to a reasonable temp directory for the OS if not specified.
+/// The path defaults to a reasonable temp directory for the OS if not specified.
 #[proc_macro_attribute]
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {

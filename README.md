@@ -27,11 +27,11 @@ async fn test_serial_another() {
   // Do things asynchronously
 }
 ```
-Multiple tests with the `serial` attribute are guaranteed to be executed in serial. Ordering of the tests is not guaranteed however. Other tests with the `parallel` attribute may run at the same time as each other, but not at the same time as a test with `serial`. Tests with neither attribute may run at any time and no guarantees are made about their timing!
+Multiple tests with the `serial` attribute are guaranteed to be executed in serial. Ordering of the tests is not guaranteed however. Other tests with the `parallel` attribute may run at the same time as each other, but not at the same time as a test with `serial`. Tests with neither attribute may run at any time and no guarantees are made about their timing! Both support optional keys for defining subsets of tests to run in serial together, see docs for more details.
 
 For cases like doctests and integration tests where the tests are run as separate processes, we also support `file_serial`, with
 similar properties but based off file locking. Note that there are no guarantees about one test with `serial` and another with 
-`file_serial` as they lock using different methods, and `parallel` doesn't support `file_serial` yet (patches welcomed!).
+`file_serial` as they lock using different methods.
 
 ## Usage
 The minimum supported Rust version here is 1.68.2. Note this is minimum _supported_, as it may well compile with lower versions, but they're not supported at all. Upgrades to this will require at a major version bump. 1.x supports 1.51 if you need a lower version than that.
@@ -44,4 +44,4 @@ serial_test = "*"
 
 plus `use serial_test::serial;` in your imports section.
 
-You can then either add `#[serial]` or `#[serial(some_text)]` to tests as required.
+You can then either add `#[serial]` or `#[serial(some_key)]` to tests as required.
