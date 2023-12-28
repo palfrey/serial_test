@@ -5,19 +5,29 @@ use crate::code_lock::{check_new_key, LOCKS};
 use futures::FutureExt;
 use std::panic;
 
+fn get_locks(
+    names: Vec<&str>,
+) -> Vec<dashmap::mapref::one::Ref<'_, String, crate::code_lock::UniqueReentrantMutex>> {
+    names
+        .into_iter()
+        .map(|name| {
+            check_new_key(name);
+            LOCKS.get(name).expect("key to be set")
+        })
+        .collect::<Vec<_>>()
+}
+
 #[doc(hidden)]
 pub fn local_parallel_core_with_return<E>(
     names: Vec<&str>,
     _path: Option<&str>,
     function: fn() -> Result<(), E>,
 ) -> Result<(), E> {
-    let name = names.first().expect("names length > 0").to_owned();
-    check_new_key(name);
+    let unlocks = get_locks(names);
 
-    let lock = LOCKS.get(name).unwrap();
-    lock.start_parallel();
+    unlocks.iter().map(|unlock| unlock.start_parallel());
     let res = panic::catch_unwind(function);
-    lock.end_parallel();
+    unlocks.iter().map(|unlock| unlock.end_parallel());
     match res {
         Ok(ret) => ret,
         Err(err) => {
@@ -28,15 +38,12 @@ pub fn local_parallel_core_with_return<E>(
 
 #[doc(hidden)]
 pub fn local_parallel_core(names: Vec<&str>, _path: Option<&str>, function: fn()) {
-    let name = names.first().expect("names length > 0").to_owned();
-    check_new_key(name);
-
-    let lock = LOCKS.get(name).unwrap();
-    lock.start_parallel();
+    let unlocks = get_locks(names);
+    unlocks.iter().map(|unlock| unlock.start_parallel());
     let res = panic::catch_unwind(|| {
         function();
     });
-    lock.end_parallel();
+    unlocks.iter().map(|unlock| unlock.end_parallel());
     if let Err(err) = res {
         panic::resume_unwind(err);
     }
@@ -49,13 +56,10 @@ pub async fn local_async_parallel_core_with_return<E>(
     _path: Option<&str>,
     fut: impl std::future::Future<Output = Result<(), E>> + panic::UnwindSafe,
 ) -> Result<(), E> {
-    let name = names.first().expect("names length > 0").to_owned();
-    check_new_key(name);
-
-    let lock = LOCKS.get(name).unwrap();
-    lock.start_parallel();
+    let unlocks = get_locks(names);
+    unlocks.iter().map(|unlock| unlock.start_parallel());
     let res = fut.catch_unwind().await;
-    lock.end_parallel();
+    unlocks.iter().map(|unlock| unlock.end_parallel());
     match res {
         Ok(ret) => ret,
         Err(err) => {
@@ -71,13 +75,10 @@ pub async fn local_async_parallel_core(
     _path: Option<&str>,
     fut: impl std::future::Future<Output = ()> + panic::UnwindSafe,
 ) {
-    let name = names.first().expect("names length > 0").to_owned();
-    check_new_key(name);
-
-    let lock = LOCKS.get(name).unwrap();
-    lock.start_parallel();
+    let unlocks = get_locks(names);
+    unlocks.iter().map(|unlock| unlock.start_parallel());
     let res = fut.catch_unwind().await;
-    lock.end_parallel();
+    unlocks.iter().map(|unlock| unlock.end_parallel());
     if let Err(err) = res {
         panic::resume_unwind(err);
     }
