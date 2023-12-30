@@ -19,6 +19,7 @@ proc-macro2 = "1.0.60" # Because of https://github.com/dtolnay/proc-macro2/issue
 
 [dev-dependencies]
 env_logger = "0.10"
+prettyplease = "0.2"
 
 [features]
 async = []

@@ -39,6 +39,8 @@
 //! ```
 
 use lazy_static::lazy_static;
+#[cfg(test)]
+use serial_test::{parallel, serial};
 use std::{
     convert::TryInto,
     env, fs,
@@ -81,6 +83,14 @@ pub fn fs_test_fn(count: usize) {
         .unwrap();
     assert_eq!(loaded, count);
 }
+
+#[cfg(test)]
+#[serial]
+mod serial_attr_tests {}
+
+#[cfg(test)]
+#[parallel]
+mod parallel_attr_tests {}
 
 #[cfg(test)]
 mod tests {
