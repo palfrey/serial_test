@@ -319,6 +319,7 @@ fn fs_parallel_core(
     parallel_setup(input, config, "fs")
 }
 
+#[allow(clippy::cmp_owned)]
 fn core_setup(
     input: proc_macro2::TokenStream,
     config: &Config,
@@ -337,32 +338,28 @@ fn core_setup(
     let mod_ast: SynResult<syn::ItemMod> = syn::parse2(input);
     match mod_ast {
         Ok(mut ast) => {
-            let new_content = ast.content.clone().and_then(|(brace, items)| {
+            let new_content = ast.content.clone().map(|(brace, items)| {
                 let new_items = items
                     .into_iter()
                     .map(|item| match item {
                         syn::Item::Fn(item_fn)
-                            if item_fn
-                                .attrs
-                                .iter()
-                                .find(|attr| {
-                                    attr.meta
-                                        .path()
-                                        .segments
-                                        .first()
-                                        .unwrap()
-                                        .ident
-                                        .to_string()
-                                        .contains("test")
-                                })
-                                .is_some() =>
+                            if item_fn.attrs.iter().any(|attr| {
+                                attr.meta
+                                    .path()
+                                    .segments
+                                    .first()
+                                    .unwrap()
+                                    .ident
+                                    .to_string()
+                                    .contains("test")
+                            }) =>
                         {
                             syn::parse2(fn_setup(item_fn, config, prefix, kind)).unwrap()
                         }
                         other => other,
                     })
                     .collect();
-                Some((brace, new_items))
+                (brace, new_items)
             });
             if let Some(nc) = new_content {
                 ast.content.replace(nc);
@@ -370,7 +367,7 @@ fn core_setup(
             ast.attrs.retain(|attr| {
                 attr.meta.path().segments.first().unwrap().ident.to_string() != "serial"
             });
-            ast.into_token_stream().into()
+            ast.into_token_stream()
         }
         Err(_) => {
             panic!("Attribute applied to something other than mod or fn!");
