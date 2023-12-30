@@ -327,13 +327,8 @@ fn core_setup(
     kind: &str,
 ) -> proc_macro2::TokenStream {
     let fn_ast: SynResult<syn::ItemFn> = syn::parse2(input.clone());
-    match fn_ast {
-        Ok(ast) => {
-            return fn_setup(ast, config, prefix, kind);
-        }
-        Err(_) => {
-            // Assume non-fn, skip
-        }
+    if let Ok(ast) = fn_ast {
+        return fn_setup(ast, config, prefix, kind);
     };
     let mod_ast: SynResult<syn::ItemMod> = syn::parse2(input);
     match mod_ast {
