@@ -30,8 +30,8 @@ use std::ops::Deref;
 /// if run at the same time as the [serial](macro@serial) tests, you can use the [parallel](macro@parallel) attribute.
 ///
 /// If you want different subsets of tests to be serialised with each
-/// other, but not depend on other subsets, you can add an argument to [serial](macro@serial), and all calls
-/// with identical arguments will be called in serial. e.g.
+/// other, but not depend on other subsets, you can add a key argument to [serial](macro@serial), and all calls
+/// with identical arguments will be called in serial. Multiple comma-separated keys will make a test run in serial with all of the sets with any of those keys.
 ///
 /// ````
 /// #[test]
@@ -67,7 +67,7 @@ use std::ops::Deref;
 /// `test_serial_one` and `test_serial_another` will be executed in serial, as will `test_serial_third` and `test_serial_fourth`
 /// but neither sequence will be blocked by the other. `test_serial_fifth` is blocked by tests in either sequence.
 ///
-/// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) are supported
+/// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) are supported.
 #[proc_macro_attribute]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     local_serial_core(attr.into(), input.into()).into()
@@ -124,9 +124,10 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// Multiple tests with the [file_serial](macro@file_serial) attribute are guaranteed to run in serial, as per the [serial](macro@serial)
 /// attribute. Note that there are no guarantees about one test with [serial](macro@serial) and another with [file_serial](macro@file_serial)
 /// as they lock using different methods, and [file_serial](macro@file_serial) does not support nested serialised tests, but otherwise acts
-/// like [serial](macro@serial).
+/// like [serial](macro@serial). If you have other tests that can be run in parallel, but would clash
+/// if run at the same time as the [file_serial](macro@file_serial) tests, you can use the [file_parallel](macro@file_parallel) attribute.
 ///
-/// It also supports an optional `path` arg as well as keys
+/// It also supports an optional `path` arg as well as key(s) as per [serial](macro@serial).
 /// ````
 /// #[test]
 /// #[file_serial(key)]
@@ -140,7 +141,7 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 ///   // Do things
 /// }
 /// ````
-/// The path defaults to a reasonable temp directory for the OS if not specified.
+/// The path defaults to a reasonable temp directory for the OS if not specified. If the `path` is specified, you can only use one key.
 #[proc_macro_attribute]
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
@@ -170,7 +171,7 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// Effectively, this should behave like [parallel](macro@parallel) but for [file_serial](macro@file_serial).
 /// Note that as per [file_serial](macro@file_serial) this doesn't do anything for [serial](macro@serial)/[parallel](macro@parallel) tests.
 ///
-/// It also supports an optional `path` arg e.g
+/// It also supports an optional `path` arg as well as key(s) as per [serial](macro@serial).
 /// ````
 /// #[test]
 /// #[file_parallel(key, path => "/tmp/foo")]
@@ -184,7 +185,7 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 ///   // Do things
 /// }
 /// ````
-/// Note that in this case you need to specify the `name` arg as well (as per [parallel](macro@parallel)). The path defaults to a reasonable temp directory for the OS if not specified.
+/// The path defaults to a reasonable temp directory for the OS if not specified. If the `path` is specified, you can only use one key.
 #[proc_macro_attribute]
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
