@@ -42,6 +42,23 @@
 //! }
 //! ````
 //!
+//! All of the attributes can also be applied at a `mod` level and will be automagically applied to all test functions in that block
+//! ````
+//! #[cfg(test)]
+//! #[serial]
+//! mod serial_attr_tests {
+//!     fn foo() {
+//!         // Won't have `serial` applied, because not a test function
+//!         println!("Nothing");
+//!     }
+//!
+//!     #[test]
+//!     fn test_bar() {
+//!        // Will be run serially
+//!     }
+//!}
+//! ````
+//!
 //! ## Feature flags
 #![cfg_attr(
     feature = "docsrs",
