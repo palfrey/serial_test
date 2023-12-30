@@ -96,7 +96,7 @@ impl Lock {
         file.write_all(&self.parallel_count.to_ne_bytes()).unwrap();
     }
 
-    pub(crate) fn start_parallel(mut self: Lock) {
+    pub(crate) fn start_parallel(self: &mut Lock) {
         self.parallel_count += 1;
         self.write_parallel();
         self.unlock();
@@ -116,11 +116,21 @@ pub(crate) fn path_for_name(name: &str) -> String {
     pathbuf.into_os_string().into_string().unwrap()
 }
 
-pub(crate) fn make_lock_for_name_and_path(name: &str, path: Option<&str>) -> Lock {
+fn make_lock_for_name_and_path(name: &str, path: Option<&str>) -> Lock {
     if let Some(opt_path) = path {
         Lock::new(opt_path)
     } else {
         let default_path = path_for_name(name);
         Lock::new(&default_path)
     }
+}
+
+pub(crate) fn get_locks(names: &Vec<&str>, path: Option<&str>) -> Vec<Lock> {
+    if names.len() > 1 && path.is_some() {
+        panic!("Can't do file_parallel with both more than one name _and_ a specific path");
+    }
+    names
+        .iter()
+        .map(|name| make_lock_for_name_and_path(name, path))
+        .collect::<Vec<_>>()
 }

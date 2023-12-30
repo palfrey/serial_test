@@ -1,51 +1,61 @@
-use crate::file_lock::make_lock_for_name_and_path;
+use std::panic;
+
+use crate::file_lock::get_locks;
 
 #[doc(hidden)]
-pub fn fs_serial_core(name: &str, path: Option<&str>, function: fn()) {
-    let mut lock = make_lock_for_name_and_path(name, path);
-    lock.start_serial();
-    function();
-    lock.end_serial();
+pub fn fs_serial_core(names: Vec<&str>, path: Option<&str>, function: fn()) {
+    let mut locks = get_locks(&names, path);
+    locks.iter_mut().for_each(|lock| lock.start_serial());
+    let res = panic::catch_unwind(function);
+    locks.into_iter().for_each(|lock| lock.end_serial());
+    if let Err(err) = res {
+        panic::resume_unwind(err);
+    }
 }
 
 #[doc(hidden)]
 pub fn fs_serial_core_with_return<E>(
-    name: &str,
+    names: Vec<&str>,
     path: Option<&str>,
     function: fn() -> Result<(), E>,
 ) -> Result<(), E> {
-    let mut lock = make_lock_for_name_and_path(name, path);
-    lock.start_serial();
-    let ret = function();
-    lock.end_serial();
-    ret
+    let mut locks = get_locks(&names, path);
+    locks.iter_mut().for_each(|lock| lock.start_serial());
+    let res = panic::catch_unwind(function);
+    locks.into_iter().for_each(|lock| lock.end_serial());
+    match res {
+        Ok(ret) => ret,
+        Err(err) => {
+            panic::resume_unwind(err);
+        }
+    }
 }
 
 #[doc(hidden)]
 #[cfg(feature = "async")]
 pub async fn fs_async_serial_core_with_return<E>(
-    name: &str,
+    names: Vec<&str>,
     path: Option<&str>,
     fut: impl std::future::Future<Output = Result<(), E>>,
 ) -> Result<(), E> {
-    let mut lock = make_lock_for_name_and_path(name, path);
-    lock.start_serial();
-    let ret = fut.await;
-    lock.end_serial();
+    let mut locks = get_locks(&names, path);
+    locks.iter_mut().for_each(|lock| lock.start_serial());
+    let ret: Result<(), E> = fut.await;
+    locks.into_iter().for_each(|lock| lock.end_serial());
     ret
 }
 
 #[doc(hidden)]
 #[cfg(feature = "async")]
 pub async fn fs_async_serial_core(
-    name: &str,
+    names: Vec<&str>,
     path: Option<&str>,
     fut: impl std::future::Future<Output = ()>,
 ) {
-    let mut lock = make_lock_for_name_and_path(name, path);
-    lock.start_serial();
+    let mut locks = get_locks(&names, path);
+    locks.iter_mut().for_each(|lock| lock.start_serial());
     fut.await;
-    lock.end_serial();
+    locks.into_iter().for_each(|lock| lock.end_serial());
 }
 
 #[cfg(test)]
@@ -59,14 +69,14 @@ mod tests {
 
     #[test]
     fn test_serial() {
-        fs_serial_core("test", None, || {});
+        fs_serial_core(vec!["test"], None, || {});
     }
 
     #[test]
     fn unlock_on_assert_sync_without_return() {
         let lock_path = path_for_name("unlock_on_assert_sync_without_return");
         let _ = panic::catch_unwind(|| {
-            fs_serial_core("foo", Some(&lock_path), || {
+            fs_serial_core(vec!["foo"], Some(&lock_path), || {
                 assert!(false);
             })
         });

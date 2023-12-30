@@ -7,6 +7,7 @@ use std::sync::{atomic::AtomicU32, Arc};
 #[cfg(feature = "logging")]
 use std::time::Instant;
 
+#[derive(Clone)]
 pub(crate) struct UniqueReentrantMutex {
     locks: Locks,
 
