@@ -449,7 +449,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "serial_test"
-version = "2.0.0"
+version = "3.0.0"
 dependencies = [
  "dashmap",
  "document-features",
@@ -465,7 +465,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test_derive"
-version = "2.0.0"
+version = "3.0.0"
 dependencies = [
  "env_logger",
  "prettyplease",
@@ -476,7 +476,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test_test"
-version = "2.0.0"
+version = "3.0.0"
 dependencies = [
  "actix-rt",
  "env_logger",
