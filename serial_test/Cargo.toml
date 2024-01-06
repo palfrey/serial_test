@@ -8,7 +8,7 @@ edition = "2018"
 repository = "https://github.com/palfrey/serial_test/"
 readme = "README.md"
 categories = ["development-tools::testing"]
-keywords = ["sequential"]
+keywords = ["sequential", "testing", "parallel"]
 
 [dependencies]
 lazy_static = "1.2"
