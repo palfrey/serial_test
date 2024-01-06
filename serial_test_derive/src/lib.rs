@@ -10,6 +10,7 @@ use proc_macro::TokenStream;
 use proc_macro2::{Literal, TokenTree};
 use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use std::ops::Deref;
+use syn::Result as SynResult;
 
 /// Allows for the creation of serialised Rust tests
 /// ````
@@ -193,7 +194,7 @@ pub fn file_parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 // Based off of https://github.com/dtolnay/quote/issues/20#issuecomment-437341743
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 struct QuoteOption<T>(Option<T>);
 
 impl<T: ToTokens> ToTokens for QuoteOption<T> {
@@ -318,13 +319,63 @@ fn fs_parallel_core(
     parallel_setup(input, config, "fs")
 }
 
+#[allow(clippy::cmp_owned)]
 fn core_setup(
     input: proc_macro2::TokenStream,
-    config: Config,
+    config: &Config,
     prefix: &str,
     kind: &str,
 ) -> proc_macro2::TokenStream {
-    let ast: syn::ItemFn = syn::parse2(input).unwrap();
+    let fn_ast: SynResult<syn::ItemFn> = syn::parse2(input.clone());
+    if let Ok(ast) = fn_ast {
+        return fn_setup(ast, config, prefix, kind);
+    };
+    let mod_ast: SynResult<syn::ItemMod> = syn::parse2(input);
+    match mod_ast {
+        Ok(mut ast) => {
+            let new_content = ast.content.clone().map(|(brace, items)| {
+                let new_items = items
+                    .into_iter()
+                    .map(|item| match item {
+                        syn::Item::Fn(item_fn)
+                            if item_fn.attrs.iter().any(|attr| {
+                                attr.meta
+                                    .path()
+                                    .segments
+                                    .first()
+                                    .unwrap()
+                                    .ident
+                                    .to_string()
+                                    .contains("test")
+                            }) =>
+                        {
+                            syn::parse2(fn_setup(item_fn, config, prefix, kind)).unwrap()
+                        }
+                        other => other,
+                    })
+                    .collect();
+                (brace, new_items)
+            });
+            if let Some(nc) = new_content {
+                ast.content.replace(nc);
+            }
+            ast.attrs.retain(|attr| {
+                attr.meta.path().segments.first().unwrap().ident.to_string() != "serial"
+            });
+            ast.into_token_stream()
+        }
+        Err(_) => {
+            panic!("Attribute applied to something other than mod or fn!");
+        }
+    }
+}
+
+fn fn_setup(
+    ast: syn::ItemFn,
+    config: &Config,
+    prefix: &str,
+    kind: &str,
+) -> proc_macro2::TokenStream {
     let asyncness = ast.sig.asyncness;
     if asyncness.is_some() && cfg!(not(feature = "async")) {
         panic!("async testing attempted with async feature disabled in serial_test!");
@@ -337,8 +388,8 @@ fn core_setup(
     };
     let block = ast.block;
     let attrs: Vec<syn::Attribute> = ast.attrs.into_iter().collect();
-    let names = config.names;
-    let path = config.path;
+    let names = config.names.clone();
+    let path = config.path.clone();
     if let Some(ret) = return_type {
         match asyncness {
             Some(_) => {
@@ -401,7 +452,7 @@ fn serial_setup(
     config: Config,
     prefix: &str,
 ) -> proc_macro2::TokenStream {
-    core_setup(input, config, prefix, "serial")
+    core_setup(input, &config, prefix, "serial")
 }
 
 fn parallel_setup(
@@ -409,14 +460,31 @@ fn parallel_setup(
     config: Config,
     prefix: &str,
 ) -> proc_macro2::TokenStream {
-    core_setup(input, config, prefix, "parallel")
+    core_setup(input, &config, prefix, "parallel")
 }
 
 #[cfg(test)]
 mod tests {
     use super::{fs_serial_core, local_serial_core};
+    use proc_macro2::TokenStream;
     use quote::quote;
     use std::iter::FromIterator;
+
+    fn unparse(input: TokenStream) -> String {
+        let item = syn::parse2(input).unwrap();
+        let file = syn::File {
+            attrs: vec![],
+            items: vec![item],
+            shebang: None,
+        };
+
+        prettyplease::unparse(&file)
+    }
+
+    fn compare_streams(first: TokenStream, second: TokenStream) {
+        let f = unparse(first);
+        assert_eq!(f, unparse(second));
+    }
 
     #[test]
     fn test_serial() {
@@ -432,7 +500,7 @@ mod tests {
                 serial_test::local_serial_core(vec![""], ::std::option::Option::None, || {} );
             }
         };
-        assert_eq!(format!("{}", compare), format!("{}", stream));
+        compare_streams(compare, stream);
     }
 
     #[test]
@@ -449,7 +517,7 @@ mod tests {
                 serial_test::local_serial_core(vec![""], ::std::option::Option::None, || {} );
             }
         };
-        assert_eq!(format!("{}", compare), format!("{}", stream));
+        compare_streams(compare, stream);
     }
 
     #[test]
@@ -470,10 +538,10 @@ mod tests {
             #[should_panic(expected = "Testing panic")]
             #[something_else]
             fn foo () {
-                serial_test::local_serial_core(vec![""], ::std::option::Option::None,  || {} );
+                serial_test::local_serial_core(vec![""], ::std::option::Option::None, || {} );
             }
         };
-        assert_eq!(format!("{}", compare), format!("{}", stream));
+        compare_streams(compare, stream);
     }
 
     #[test]
@@ -527,7 +595,7 @@ mod tests {
                 serial_test::fs_serial_core(vec!["foo"], ::std::option::Option::None, || {} );
             }
         };
-        assert_eq!(format!("{}", compare), format!("{}", stream));
+        compare_streams(compare, stream);
     }
 
     #[test]
@@ -547,7 +615,7 @@ mod tests {
                 serial_test::fs_serial_core(vec![""], ::std::option::Option::None, || {} );
             }
         };
-        assert_eq!(format!("{}", compare), format!("{}", stream));
+        compare_streams(compare, stream);
     }
 
     #[test]
@@ -567,7 +635,7 @@ mod tests {
                 serial_test::fs_serial_core(vec!["foo"], ::std::option::Option::Some("bar_path"), || {} );
             }
         };
-        assert_eq!(format!("{}", compare), format!("{}", stream));
+        compare_streams(compare, stream);
     }
 
     #[test]
@@ -587,7 +655,7 @@ mod tests {
                 serial_test::local_serial_core(vec!["one"], ::std::option::Option::None, || {} );
             }
         };
-        assert_eq!(format!("{}", compare), format!("{}", stream));
+        compare_streams(compare, stream);
     }
 
     #[test]
@@ -607,6 +675,41 @@ mod tests {
                 serial_test::local_serial_core(vec!["one", "two"], ::std::option::Option::None, || {} );
             }
         };
-        assert_eq!(format!("{}", compare), format!("{}", stream));
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    fn test_mod() {
+        let attrs = proc_macro2::TokenStream::new();
+        let input = quote! {
+            #[cfg(test)]
+            #[serial]
+            mod serial_attr_tests {
+                pub fn foo() {
+                    println!("Nothing");
+                }
+
+                #[test]
+                fn bar() {}
+            }
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[cfg(test)]
+            mod serial_attr_tests {
+                pub fn foo() {
+                    println!("Nothing");
+                }
+
+                #[test]
+                fn bar() {
+                    serial_test::local_serial_core(vec![""], ::std::option::Option::None, || {} );
+                }
+            }
+        };
+        compare_streams(compare, stream);
     }
 }

@@ -33,6 +33,8 @@ For cases like doctests and integration tests where the tests are run as separat
 similar properties but based off file locking. Note that there are no guarantees about one test with `serial` and another with 
 `file_serial` as they lock using different methods.
 
+All of the attributes can also be applied at a `mod` level and will be automagically applied to all test functions in that block.
+
 ## Usage
 The minimum supported Rust version here is 1.68.2. Note this is minimum _supported_, as it may well compile with lower versions, but they're not supported at all. Upgrades to this will require at a major version bump. 1.x supports 1.51 if you need a lower version than that.
 
