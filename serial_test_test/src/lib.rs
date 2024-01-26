@@ -38,23 +38,17 @@
 //! fn main() {}
 //! ```
 
-use lazy_static::lazy_static;
 #[cfg(test)]
 use serial_test::{parallel, serial};
 use std::{
     convert::TryInto,
     env, fs,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
+    sync::atomic::{AtomicUsize, Ordering},
     thread,
     time::Duration,
 };
 
-lazy_static! {
-    static ref LOCK: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));
-}
+static LOCK: AtomicUsize = AtomicUsize::new(0);
 
 fn init() {
     let _ = env_logger::builder().is_test(false).try_init();
@@ -95,22 +89,29 @@ mod parallel_attr_tests {}
 #[cfg(test)]
 mod tests {
     use super::{init, test_fn};
-    use lazy_static::lazy_static;
+    use once_cell::sync::OnceCell;
     use parking_lot::Mutex;
     use serial_test::{parallel, serial};
-    use std::{
-        sync::{Arc, Barrier},
-        thread,
-        time::Duration,
-    };
+    use std::{sync::Barrier, thread, time::Duration};
     #[cfg(feature = "async")]
     use wasm_bindgen_test::wasm_bindgen_test;
 
-    lazy_static! {
-        static ref THREAD_ORDERINGS: Arc<Mutex<Vec<bool>>> = Arc::new(Mutex::new(Vec::new()));
-        static ref FS_THREAD_ORDERINGS: Arc<Mutex<Vec<bool>>> = Arc::new(Mutex::new(Vec::new()));
-        static ref PARALLEL_BARRIER: Barrier = Barrier::new(3);
-        static ref FS_PARALLEL_BARRIER: Barrier = Barrier::new(3);
+    static THREAD_ORDERINGS: Mutex<Vec<bool>> = Mutex::new(Vec::new());
+
+    #[inline]
+    fn parallel_barrier() -> &'static Barrier {
+        static PARALLEL_BARRIER: OnceCell<Barrier> = OnceCell::new();
+        PARALLEL_BARRIER.get_or_init(|| Barrier::new(3))
+    }
+
+    #[cfg(feature = "file_locks")]
+    static FS_THREAD_ORDERINGS: Mutex<Vec<bool>> = Mutex::new(Vec::new());
+
+    #[cfg(feature = "file_locks")]
+    #[inline]
+    fn fs_parallel_barrier() -> &'static Barrier {
+        static FS_PARALLEL_BARRIER: OnceCell<Barrier> = OnceCell::new();
+        FS_PARALLEL_BARRIER.get_or_init(|| Barrier::new(3))
     }
 
     #[cfg(feature = "file_locks")]
@@ -264,7 +265,7 @@ mod tests {
     fn parallel_with_key_1() {
         thread::sleep(Duration::from_secs(1));
         println!("Waiting barrier 1");
-        PARALLEL_BARRIER.wait();
+        parallel_barrier().wait();
         println!("Waiting lock 1");
         THREAD_ORDERINGS.lock().push(false);
     }
@@ -274,7 +275,7 @@ mod tests {
     fn parallel_with_key_2() {
         thread::sleep(Duration::from_secs(2));
         println!("Waiting barrier 2");
-        PARALLEL_BARRIER.wait();
+        parallel_barrier().wait();
         println!("Waiting lock 2");
         THREAD_ORDERINGS.lock().push(false);
     }
@@ -284,7 +285,7 @@ mod tests {
     fn parallel_with_key_3() {
         thread::sleep(Duration::from_secs(3));
         println!("Waiting barrier 3");
-        PARALLEL_BARRIER.wait();
+        parallel_barrier().wait();
         println!("Waiting lock 3");
         THREAD_ORDERINGS.lock().push(false);
     }
@@ -322,7 +323,7 @@ mod tests {
         init();
         thread::sleep(Duration::from_secs(1));
         println!("Waiting barrier 1");
-        FS_PARALLEL_BARRIER.wait();
+        fs_parallel_barrier().wait();
         println!("Waiting lock 1");
         FS_THREAD_ORDERINGS.lock().push(false);
     }
@@ -334,7 +335,7 @@ mod tests {
         init();
         thread::sleep(Duration::from_secs(1));
         println!("Waiting barrier 2");
-        FS_PARALLEL_BARRIER.wait();
+        fs_parallel_barrier().wait();
         println!("Waiting lock 2");
         FS_THREAD_ORDERINGS.lock().push(false);
     }
@@ -346,7 +347,7 @@ mod tests {
         init();
         thread::sleep(Duration::from_secs(1));
         println!("Waiting barrier 3");
-        FS_PARALLEL_BARRIER.wait();
+        fs_parallel_barrier().wait();
         println!("Waiting lock 3");
         FS_THREAD_ORDERINGS.lock().push(false);
     }

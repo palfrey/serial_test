@@ -11,7 +11,7 @@ categories = ["development-tools::testing"]
 keywords = ["sequential", "testing", "parallel"]
 
 [dependencies]
-lazy_static = "1.2"
+once_cell = "^1.19"
 parking_lot = "^0.12"
 serial_test_derive = { version = "~3.0.0", path = "../serial_test_derive" }
 fslock = { version = "0.2", optional = true }

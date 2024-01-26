@@ -1,6 +1,6 @@
 #![allow(clippy::await_holding_lock)]
 
-use crate::code_lock::{check_new_key, LOCKS};
+use crate::code_lock::{check_new_key, global_locks};
 
 #[doc(hidden)]
 macro_rules! core_internal {
@@ -9,7 +9,7 @@ macro_rules! core_internal {
             .into_iter()
             .map(|name| {
                 check_new_key(name);
-                LOCKS.get(name).expect("key to be set")
+                global_locks().get(name).expect("key to be set")
             })
             .collect();
         let _guards: Vec<_> = unlocks.iter().map(|unlock| unlock.lock()).collect();
@@ -58,7 +58,7 @@ pub async fn local_async_serial_core(
 #[allow(clippy::print_stdout)]
 mod tests {
     use super::local_serial_core;
-    use crate::code_lock::{check_new_key, LOCKS};
+    use crate::code_lock::{check_new_key, global_locks};
     use itertools::Itertools;
     use parking_lot::RwLock;
     use std::{
@@ -76,7 +76,7 @@ mod tests {
         let barrier = Arc::new(Barrier::new(count));
 
         for _ in 0..count {
-            let local_locks = LOCKS.clone();
+            let local_locks = global_locks();
             let local_ptrs = ptrs.clone();
             let c = barrier.clone();
             threads.push(thread::spawn(move || {
@@ -113,6 +113,6 @@ mod tests {
                 assert!(false);
             })
         });
-        assert!(!LOCKS.get("assert").unwrap().is_locked());
+        assert!(!global_locks().get("assert").unwrap().is_locked());
     }
 }
