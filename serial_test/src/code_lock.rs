@@ -1,9 +1,9 @@
 use crate::rwlock::{Locks, MutexGuardWrapper};
 use dashmap::{try_result::TryResult, DashMap};
-use lazy_static::lazy_static;
 #[cfg(feature = "logging")]
 use log::debug;
-use std::sync::{atomic::AtomicU32, Arc};
+use once_cell::sync::OnceCell;
+use std::sync::atomic::AtomicU32;
 #[cfg(feature = "logging")]
 use std::time::Instant;
 
@@ -40,11 +40,13 @@ impl UniqueReentrantMutex {
     }
 }
 
-lazy_static! {
-    pub(crate) static ref LOCKS: Arc<DashMap<String, UniqueReentrantMutex>> =
-        Arc::new(DashMap::new());
-    static ref MUTEX_ID: Arc<AtomicU32> = Arc::new(AtomicU32::new(1));
+#[inline]
+pub(crate) fn global_locks() -> &'static DashMap<String, UniqueReentrantMutex> {
+    static LOCKS: OnceCell<DashMap<String, UniqueReentrantMutex>> = OnceCell::new();
+    LOCKS.get_or_init(DashMap::new)
 }
+
+static MUTEX_ID: AtomicU32 = AtomicU32::new(1);
 
 impl Default for UniqueReentrantMutex {
     fn default() -> Self {
@@ -65,7 +67,7 @@ pub(crate) fn check_new_key(name: &str) {
             debug!("Waiting for '{}' {:?}", name, duration);
         }
         // Check if a new key is needed. Just need a read lock, which can be done in sync with everyone else
-        match LOCKS.try_get(name) {
+        match global_locks().try_get(name) {
             TryResult::Present(_) => {
                 return;
             }
@@ -76,7 +78,7 @@ pub(crate) fn check_new_key(name: &str) {
         };
 
         // This is the rare path, which avoids the multi-writer situation mostly
-        let try_entry = LOCKS.try_entry(name.to_string());
+        let try_entry = global_locks().try_entry(name.to_string());
 
         if let Some(entry) = try_entry {
             entry.or_default();

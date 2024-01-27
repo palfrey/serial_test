@@ -1,6 +1,6 @@
 #![allow(clippy::await_holding_lock)]
 
-use crate::code_lock::{check_new_key, LOCKS};
+use crate::code_lock::{check_new_key, global_locks};
 #[cfg(feature = "async")]
 use futures::FutureExt;
 use std::panic;
@@ -12,7 +12,7 @@ fn get_locks(
         .into_iter()
         .map(|name| {
             check_new_key(name);
-            LOCKS.get(name).expect("key to be set")
+            global_locks().get(name).expect("key to be set")
         })
         .collect::<Vec<_>>()
 }
@@ -89,7 +89,7 @@ mod tests {
     #[cfg(feature = "async")]
     use crate::{local_async_parallel_core, local_async_parallel_core_with_return};
 
-    use crate::{code_lock::LOCKS, local_parallel_core, local_parallel_core_with_return};
+    use crate::{code_lock::global_locks, local_parallel_core, local_parallel_core_with_return};
     use std::{io::Error, panic};
 
     #[test]
@@ -100,7 +100,7 @@ mod tests {
             })
         });
         assert_eq!(
-            LOCKS
+            global_locks()
                 .get("unlock_on_assert_sync_without_return")
                 .unwrap()
                 .parallel_count(),
@@ -121,7 +121,7 @@ mod tests {
             )
         });
         assert_eq!(
-            LOCKS
+            global_locks()
                 .get("unlock_on_assert_sync_with_return")
                 .unwrap()
                 .parallel_count(),
@@ -150,7 +150,7 @@ mod tests {
             futures::executor::block_on(call_serial_test_fn());
         });
         assert_eq!(
-            LOCKS
+            global_locks()
                 .get("unlock_on_assert_async_without_return")
                 .unwrap()
                 .parallel_count(),
@@ -183,7 +183,7 @@ mod tests {
             futures::executor::block_on(call_serial_test_fn());
         });
         assert_eq!(
-            LOCKS
+            global_locks()
                 .get("unlock_on_assert_async_with_return")
                 .unwrap()
                 .parallel_count(),
