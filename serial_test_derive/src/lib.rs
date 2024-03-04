@@ -13,7 +13,7 @@ use std::ops::Deref;
 use syn::Result as SynResult;
 
 /// Allows for the creation of serialised Rust tests
-/// ````
+/// ````no_run
 /// #[test]
 /// #[serial]
 /// fn test_serial_one() {
@@ -34,7 +34,7 @@ use syn::Result as SynResult;
 /// other, but not depend on other subsets, you can add a key argument to [serial](macro@serial), and all calls
 /// with identical arguments will be called in serial. Multiple comma-separated keys will make a test run in serial with all of the sets with any of those keys.
 ///
-/// ````
+/// ````no_run
 /// #[test]
 /// #[serial(something)]
 /// fn test_serial_one() {
@@ -75,7 +75,7 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 /// Allows for the creation of parallel Rust tests that won't clash with serial tests
-/// ````
+/// ````no_run
 /// #[test]
 /// #[serial]
 /// fn test_serial_one() {
@@ -108,7 +108,7 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 /// Allows for the creation of file-serialised Rust tests
-/// ````
+/// ````no_run
 /// #[test]
 /// #[file_serial]
 /// fn test_serial_one() {
@@ -129,7 +129,7 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// if run at the same time as the [file_serial](macro@file_serial) tests, you can use the [file_parallel](macro@file_parallel) attribute.
 ///
 /// It also supports an optional `path` arg as well as key(s) as per [serial](macro@serial).
-/// ````
+/// ````no_run
 /// #[test]
 /// #[file_serial(key)]
 /// fn test_serial_one() {
@@ -150,7 +150,7 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 /// Allows for the creation of file-serialised parallel Rust tests that won't clash with file-serialised serial tests
-/// ````
+/// ````no_run
 /// #[test]
 /// #[file_serial]
 /// fn test_serial_one() {
@@ -173,7 +173,7 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// Note that as per [file_serial](macro@file_serial) this doesn't do anything for [serial](macro@serial)/[parallel](macro@parallel) tests.
 ///
 /// It also supports an optional `path` arg as well as key(s) as per [serial](macro@serial).
-/// ````
+/// ````no_run
 /// #[test]
 /// #[file_parallel(key, path => "/tmp/foo")]
 /// fn test_parallel_one() {
