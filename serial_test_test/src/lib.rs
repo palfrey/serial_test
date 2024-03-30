@@ -36,6 +36,7 @@
 //! fn main() {}
 //! ```
 
+use log::info;
 #[cfg(test)]
 use serial_test::{parallel, serial};
 use std::{
@@ -45,7 +46,6 @@ use std::{
     thread,
     time::Duration,
 };
-use log::info;
 
 static LOCK: AtomicUsize = AtomicUsize::new(0);
 

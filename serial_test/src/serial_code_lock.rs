@@ -9,7 +9,11 @@ macro_rules! core_internal {
             .into_iter()
             .map(|name| {
                 check_new_key(name);
-                global_locks().get(name).expect("key to be set").get().clone()
+                global_locks()
+                    .get(name)
+                    .expect("key to be set")
+                    .get()
+                    .clone()
             })
             .collect();
         let _guards: Vec<_> = unlocks.iter().map(|unlock| unlock.lock()).collect();
