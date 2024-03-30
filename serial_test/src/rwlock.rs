@@ -1,5 +1,7 @@
 use parking_lot::{Condvar, Mutex, ReentrantMutex, ReentrantMutexGuard};
 use std::{sync::Arc, time::Duration};
+#[cfg(feature = "logging")]
+use log::debug;
 
 struct LockState {
     parallels: u32,
@@ -14,6 +16,9 @@ struct LockData {
 #[derive(Clone)]
 pub(crate) struct Locks {
     arc: Arc<LockData>,
+    // Name we're locking for (mostly test usage)
+    #[cfg(feature = "logging")]
+    pub(crate) name: String
 }
 
 pub(crate) struct MutexGuardWrapper<'a> {
@@ -24,18 +29,22 @@ pub(crate) struct MutexGuardWrapper<'a> {
 
 impl<'a> Drop for MutexGuardWrapper<'a> {
     fn drop(&mut self) {
+        #[cfg(feature = "logging")]
+        debug!("End serial");
         self.locks.arc.condvar.notify_one();
     }
 }
 
 impl Locks {
-    pub fn new() -> Locks {
+    pub fn new(name: &str) -> Locks {
         Locks {
             arc: Arc::new(LockData {
                 mutex: Mutex::new(LockState { parallels: 0 }),
                 condvar: Condvar::new(),
                 serial: Default::default(),
             }),
+            #[cfg(feature = "logging")]
+            name: name.to_owned()
         }
     }
 
@@ -45,16 +54,25 @@ impl Locks {
     }
 
     pub fn serial(&self) -> MutexGuardWrapper {
+        #[cfg(feature = "logging")]
+        debug!("Get serial lock '{}'", self.name);        
         let mut lock_state = self.arc.mutex.lock();
         loop {
+            #[cfg(feature = "logging")]
+            debug!("Serial acquire {} {}", lock_state.parallels, self.name);
             // If all the things we want are true, try to lock out serial
             if lock_state.parallels == 0 {
                 let possible_serial_lock = self.arc.serial.try_lock();
                 if let Some(serial_lock) = possible_serial_lock {
+                    #[cfg(feature = "logging")]
+                    debug!("Got serial '{}'", self.name);                    
                     return MutexGuardWrapper {
                         mutex_guard: serial_lock,
                         locks: self.clone(),
                     };
+                } else {
+                    #[cfg(feature = "logging")]
+                    debug!("Someone else has serial '{}'", self.name);                    
                 }
             }
 
@@ -65,8 +83,12 @@ impl Locks {
     }
 
     pub fn start_parallel(&self) {
+        #[cfg(feature = "logging")]
+        debug!("Get parallel lock '{}'", self.name);
         let mut lock_state = self.arc.mutex.lock();
         loop {
+            #[cfg(feature = "logging")]
+            debug!("Parallel, existing {} '{}'", lock_state.parallels, self.name);            
             if lock_state.parallels > 0 {
                 // fast path, as someone else already has it locked
                 lock_state.parallels += 1;
@@ -75,11 +97,15 @@ impl Locks {
 
             let possible_serial_lock = self.arc.serial.try_lock();
             if possible_serial_lock.is_some() {
+                #[cfg(feature = "logging")]
+                debug!("Parallel first '{}'", self.name);                
                 // We now know no-one else has the serial lock, so we can add to parallel
                 lock_state.parallels = 1; // Had to have been 0 before, as otherwise we'd have hit the fast path
                 return;
             }
 
+            #[cfg(feature = "logging")]
+            debug!("Parallel waiting '{}'", self.name);
             self.arc
                 .condvar
                 .wait_for(&mut lock_state, Duration::from_secs(1));
@@ -87,6 +113,8 @@ impl Locks {
     }
 
     pub fn end_parallel(&self) {
+        #[cfg(feature = "logging")]
+        debug!("End parallel");        
         let mut lock_state = self.arc.mutex.lock();
         assert!(lock_state.parallels > 0);
         lock_state.parallels -= 1;

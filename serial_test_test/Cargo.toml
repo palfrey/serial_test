@@ -15,6 +15,7 @@ parking_lot = "^0.12"
 lock_api = "^0.4.7"
 wasm-bindgen-test = {version="0.3.20", optional=true}
 scoped-tls = {version="1", optional=true}
+log = { version = "0.4" }
 
 [dev-dependencies]
 tokio = { version = "^1.27", features = ["macros", "rt"] }
@@ -22,7 +23,7 @@ actix-rt = { version = "^2.8", features = ["macros"] }
 futures-util = {version = "^0.3", default_features = false }
 
 [features]
-default = ["serial_test/logging", "async"]
+default = ["serial_test/logging", "async", "serial_test/test_logging"]
 file_locks = ["serial_test/file_locks"]
 async = ["serial_test/async", "wasm-bindgen-test", "scoped-tls"]
 

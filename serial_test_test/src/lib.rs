@@ -1,5 +1,3 @@
-#![allow(clippy::print_stdout)] // because test code
-
 //! Not inside the cfg(test) block because of <https://github.com/rust-lang/rust/issues/45599>
 //! ```
 //! #[macro_use] extern crate serial_test;
@@ -47,30 +45,31 @@ use std::{
     thread,
     time::Duration,
 };
+use log::info;
 
 static LOCK: AtomicUsize = AtomicUsize::new(0);
 
 fn init() {
-    let _ = env_logger::builder().is_test(false).try_init();
+    let _ = env_logger::builder().try_init();
 }
 
 pub fn test_fn(count: usize) {
     init();
-    println!("(non-fs) Start {}", count);
+    info!("(non-fs) Start {}", count);
     LOCK.store(count, Ordering::Relaxed);
     thread::sleep(Duration::from_millis(1000 * (count as u64)));
-    println!("(non-fs) End {}", count);
+    info!("(non-fs) End {}", count);
     assert_eq!(LOCK.load(Ordering::Relaxed), count);
 }
 
 pub fn fs_test_fn(count: usize) {
     init();
-    println!("(fs) Start {}", count);
+    info!("(fs) Start {}", count);
     let mut pathbuf = env::temp_dir();
     pathbuf.push("serial-test-test");
     fs::write(pathbuf.as_path(), count.to_ne_bytes()).unwrap();
     thread::sleep(Duration::from_millis(1000 * (count as u64)));
-    println!("(fs) End {}", count);
+    info!("(fs) End {}", count);
 
     let loaded = fs::read(pathbuf.as_path())
         .map(|bytes| usize::from_ne_bytes(bytes.as_slice().try_into().unwrap()))
@@ -89,6 +88,7 @@ mod parallel_attr_tests {}
 #[cfg(test)]
 mod tests {
     use super::{init, test_fn};
+    use log::info;
     use once_cell::sync::OnceCell;
     use parking_lot::Mutex;
     use serial_test::{parallel, serial};
@@ -264,9 +264,9 @@ mod tests {
     #[parallel(ordering_key)]
     fn parallel_with_key_1() {
         thread::sleep(Duration::from_secs(1));
-        println!("Waiting barrier 1");
+        info!("Waiting barrier 1");
         parallel_barrier().wait();
-        println!("Waiting lock 1");
+        info!("Waiting lock 1");
         THREAD_ORDERINGS.lock().push(false);
     }
 
@@ -274,9 +274,9 @@ mod tests {
     #[parallel(ordering_key)]
     fn parallel_with_key_2() {
         thread::sleep(Duration::from_secs(2));
-        println!("Waiting barrier 2");
+        info!("Waiting barrier 2");
         parallel_barrier().wait();
-        println!("Waiting lock 2");
+        info!("Waiting lock 2");
         THREAD_ORDERINGS.lock().push(false);
     }
 
@@ -284,9 +284,9 @@ mod tests {
     #[parallel(ordering_key)]
     fn parallel_with_key_3() {
         thread::sleep(Duration::from_secs(3));
-        println!("Waiting barrier 3");
+        info!("Waiting barrier 3");
         parallel_barrier().wait();
-        println!("Waiting lock 3");
+        info!("Waiting lock 3");
         THREAD_ORDERINGS.lock().push(false);
     }
 
@@ -322,9 +322,9 @@ mod tests {
     fn file_parallel_with_key_1() {
         init();
         thread::sleep(Duration::from_secs(1));
-        println!("Waiting barrier 1");
+        info!("Waiting barrier 1");
         fs_parallel_barrier().wait();
-        println!("Waiting lock 1");
+        info!("Waiting lock 1");
         FS_THREAD_ORDERINGS.lock().push(false);
     }
 
@@ -334,9 +334,9 @@ mod tests {
     fn file_parallel_with_key_2() {
         init();
         thread::sleep(Duration::from_secs(1));
-        println!("Waiting barrier 2");
+        info!("Waiting barrier 2");
         fs_parallel_barrier().wait();
-        println!("Waiting lock 2");
+        info!("Waiting lock 2");
         FS_THREAD_ORDERINGS.lock().push(false);
     }
 
@@ -346,9 +346,9 @@ mod tests {
     fn file_parallel_with_key_3() {
         init();
         thread::sleep(Duration::from_secs(1));
-        println!("Waiting barrier 3");
+        info!("Waiting barrier 3");
         fs_parallel_barrier().wait();
-        println!("Waiting lock 3");
+        info!("Waiting lock 3");
         FS_THREAD_ORDERINGS.lock().push(false);
     }
 

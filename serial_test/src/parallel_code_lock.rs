@@ -7,12 +7,12 @@ use std::panic;
 
 fn get_locks(
     names: Vec<&str>,
-) -> Vec<dashmap::mapref::one::Ref<'_, String, crate::code_lock::UniqueReentrantMutex>> {
+) -> Vec<crate::code_lock::UniqueReentrantMutex> {
     names
         .into_iter()
         .map(|name| {
             check_new_key(name);
-            global_locks().get(name).expect("key to be set")
+            global_locks().get(name).expect("key to be set").get().clone()
         })
         .collect::<Vec<_>>()
 }
@@ -103,6 +103,7 @@ mod tests {
             global_locks()
                 .get("unlock_on_assert_sync_without_return")
                 .unwrap()
+                .get()
                 .parallel_count(),
             0
         );
@@ -124,6 +125,7 @@ mod tests {
             global_locks()
                 .get("unlock_on_assert_sync_with_return")
                 .unwrap()
+                .get()
                 .parallel_count(),
             0
         );
@@ -153,6 +155,7 @@ mod tests {
             global_locks()
                 .get("unlock_on_assert_async_without_return")
                 .unwrap()
+                .get()
                 .parallel_count(),
             0
         );
@@ -186,6 +189,7 @@ mod tests {
             global_locks()
                 .get("unlock_on_assert_async_with_return")
                 .unwrap()
+                .get()
                 .parallel_count(),
             0
         );
