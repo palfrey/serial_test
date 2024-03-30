@@ -74,11 +74,15 @@ mod tests {
 
     #[test]
     fn unlock_on_assert_sync_without_return() {
-        let lock_path = path_for_name("unlock_on_assert_sync_without_return");
+        let lock_path = path_for_name("serial_unlock_on_assert_sync_without_return");
         let _ = panic::catch_unwind(|| {
-            fs_serial_core(vec!["foo"], Some(&lock_path), || {
-                assert!(false);
-            })
+            fs_serial_core(
+                vec!["serial_unlock_on_assert_sync_without_return"],
+                Some(&lock_path),
+                || {
+                    assert!(false);
+                },
+            )
         });
         let mut lockfile = LockFile::open(&lock_path).unwrap();
         assert!(lockfile.try_lock().unwrap());

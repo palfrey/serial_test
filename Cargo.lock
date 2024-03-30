@@ -73,19 +73,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dashmap"
-version = "5.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "907076dfda823b0b36d2a1bb5f90c96660a5bbcd7729e10727f07858f22c4edc"
-dependencies = [
- "cfg-if",
- "hashbrown",
- "lock_api",
- "once_cell",
- "parking_lot_core",
-]
-
-[[package]]
 name = "document-features"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -209,12 +196,6 @@ dependencies = [
  "pin-utils",
  "slab",
 ]
-
-[[package]]
-name = "hashbrown"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 
 [[package]]
 name = "hermit-abi"
@@ -430,6 +411,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "scc"
+version = "2.0.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6ffca2d370bbde3a120a882da4094bdb29b4fcb5ffbdc482c9fdf2903c16e50"
+
+[[package]]
 name = "scoped-tls"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -445,14 +432,15 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 name = "serial_test"
 version = "3.0.0"
 dependencies = [
- "dashmap",
  "document-features",
+ "env_logger",
  "fslock",
  "futures",
  "itertools",
  "log",
  "once_cell",
  "parking_lot",
+ "scc",
  "serial_test_derive",
  "tokio",
 ]
@@ -476,6 +464,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "lock_api",
+ "log",
  "once_cell",
  "parking_lot",
  "scoped-tls",

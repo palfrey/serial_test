@@ -20,7 +20,8 @@ log = { version = "0.4", optional = true }
 futures = { version = "^0.3", default_features = false, features = [
     "executor",
 ], optional = true}
-dashmap = { version = "5"}
+scc = { version = "2"}
+env_logger = {version="0.10", optional=true}
 
 [dev-dependencies]
 itertools = "0.10"
@@ -31,6 +32,9 @@ default = ["logging", "async"]
 
 ## Switches on debug logging (and requires the `log` package)
 logging = ["log"]
+
+## Switches on debug with env_logger. Generally only needed by internal serial_test work.
+test_logging = ["logging", "env_logger", "serial_test_derive/test_logging"]
 
 ## Enables async features (and requires the `futures` package)
 async = ["futures", "serial_test_derive/async"]
@@ -48,4 +52,4 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [package.metadata.cargo-all-features]
 skip_optional_dependencies = true
-denylist = ["docsrs"]
+denylist = ["docsrs", "test_logging"]

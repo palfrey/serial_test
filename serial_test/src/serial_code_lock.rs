@@ -9,7 +9,11 @@ macro_rules! core_internal {
             .into_iter()
             .map(|name| {
                 check_new_key(name);
-                global_locks().get(name).expect("key to be set")
+                global_locks()
+                    .get(name)
+                    .expect("key to be set")
+                    .get()
+                    .clone()
             })
             .collect();
         let _guards: Vec<_> = unlocks.iter().map(|unlock| unlock.lock()).collect();
@@ -84,7 +88,7 @@ mod tests {
                 check_new_key("foo");
                 {
                     let unlock = local_locks.get("foo").expect("read didn't work");
-                    let mutex = unlock.value();
+                    let mutex = unlock.get();
 
                     let mut ptr_guard = local_ptrs
                         .try_write_for(Duration::from_secs(1))
@@ -113,6 +117,6 @@ mod tests {
                 assert!(false);
             })
         });
-        assert!(!global_locks().get("assert").unwrap().is_locked());
+        assert!(!global_locks().get("assert").unwrap().get().is_locked());
     }
 }

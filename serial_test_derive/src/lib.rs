@@ -382,6 +382,15 @@ fn fn_setup(
     }
     let vis = ast.vis;
     let name = ast.sig.ident;
+    #[cfg(all(feature = "test_logging", not(test)))]
+    let print_name = {
+        let print_str = format!("Starting {name}");
+        quote! {
+            println!(#print_str);
+        }
+    };
+    #[cfg(any(not(feature = "test_logging"), test))]
+    let print_name = quote! {};
     let return_type = match ast.sig.output {
         syn::ReturnType::Default => None,
         syn::ReturnType::Type(_rarrow, ref box_type) => Some(box_type.deref()),
@@ -402,6 +411,7 @@ fn fn_setup(
                     #(#attrs)
                     *
                     #vis async fn #name () -> #ret {
+                        #print_name
                         serial_test::#fnname(vec![#(#names ),*], #path, #temp_fn()).await
                     }
                 }
@@ -412,6 +422,7 @@ fn fn_setup(
                     #(#attrs)
                     *
                     #vis fn #name () -> #ret {
+                        #print_name
                         serial_test::#fnname(vec![#(#names ),*], #path, || #block )
                     }
                 }
@@ -429,6 +440,7 @@ fn fn_setup(
                     #(#attrs)
                     *
                     #vis async fn #name () {
+                        #print_name
                         serial_test::#fnname(vec![#(#names ),*], #path, #temp_fn()).await;
                     }
                 }
@@ -439,6 +451,7 @@ fn fn_setup(
                     #(#attrs)
                     *
                     #vis fn #name () {
+                        #print_name
                         serial_test::#fnname(vec![#(#names ),*], #path, || #block );
                     }
                 }
@@ -470,6 +483,10 @@ mod tests {
     use quote::quote;
     use std::iter::FromIterator;
 
+    fn init() {
+        let _ = env_logger::builder().is_test(false).try_init();
+    }
+
     fn unparse(input: TokenStream) -> String {
         let item = syn::parse2(input).unwrap();
         let file = syn::File {
@@ -488,6 +505,7 @@ mod tests {
 
     #[test]
     fn test_serial() {
+        init();
         let attrs = proc_macro2::TokenStream::new();
         let input = quote! {
             #[test]
@@ -505,6 +523,7 @@ mod tests {
 
     #[test]
     fn test_serial_with_pub() {
+        init();
         let attrs = proc_macro2::TokenStream::new();
         let input = quote! {
             #[test]
@@ -522,7 +541,7 @@ mod tests {
 
     #[test]
     fn test_other_attributes() {
-        let _ = env_logger::builder().is_test(true).try_init();
+        init();
         let attrs = proc_macro2::TokenStream::new();
         let input = quote! {
             #[test]
@@ -547,6 +566,7 @@ mod tests {
     #[test]
     #[cfg(feature = "async")]
     fn test_serial_async() {
+        init();
         let attrs = proc_macro2::TokenStream::new();
         let input = quote! {
             async fn foo() {}
@@ -564,6 +584,7 @@ mod tests {
     #[test]
     #[cfg(feature = "async")]
     fn test_serial_async_return() {
+        init();
         let attrs = proc_macro2::TokenStream::new();
         let input = quote! {
             async fn foo() -> Result<(), ()> { Ok(()) }
@@ -580,6 +601,7 @@ mod tests {
 
     #[test]
     fn test_file_serial() {
+        init();
         let attrs: Vec<_> = quote! { foo }.into_iter().collect();
         let input = quote! {
             #[test]
@@ -600,6 +622,7 @@ mod tests {
 
     #[test]
     fn test_file_serial_no_args() {
+        init();
         let attrs = proc_macro2::TokenStream::new();
         let input = quote! {
             #[test]
@@ -620,6 +643,7 @@ mod tests {
 
     #[test]
     fn test_file_serial_with_path() {
+        init();
         let attrs: Vec<_> = quote! { foo, path => "bar_path" }.into_iter().collect();
         let input = quote! {
             #[test]
@@ -640,6 +664,7 @@ mod tests {
 
     #[test]
     fn test_single_attr() {
+        init();
         let attrs: Vec<_> = quote! { one}.into_iter().collect();
         let input = quote! {
             #[test]
@@ -660,6 +685,7 @@ mod tests {
 
     #[test]
     fn test_multiple_attr() {
+        init();
         let attrs: Vec<_> = quote! { two, one }.into_iter().collect();
         let input = quote! {
             #[test]
@@ -680,6 +706,7 @@ mod tests {
 
     #[test]
     fn test_mod() {
+        init();
         let attrs = proc_macro2::TokenStream::new();
         let input = quote! {
             #[cfg(test)]

@@ -102,10 +102,10 @@ mod tests {
 
     #[test]
     fn unlock_on_assert_sync_without_return() {
-        let lock_path = path_for_name("unlock_on_assert_sync_without_return");
+        let lock_path = path_for_name("parallel_unlock_on_assert_sync_without_return");
         let _ = panic::catch_unwind(|| {
             fs_parallel_core(
-                vec!["unlock_on_assert_sync_without_return"],
+                vec!["parallel_unlock_on_assert_sync_without_return"],
                 Some(&lock_path),
                 || {
                     assert!(false);
