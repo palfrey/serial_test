@@ -50,7 +50,7 @@ use log::info;
 static LOCK: AtomicUsize = AtomicUsize::new(0);
 
 fn init() {
-    let _ = env_logger::builder().try_init();
+    let _ = env_logger::builder().is_test(false).try_init();
 }
 
 pub fn test_fn(count: usize) {
