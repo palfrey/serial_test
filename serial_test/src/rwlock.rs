@@ -118,7 +118,7 @@ impl Locks {
 
     pub fn end_parallel(&self) {
         #[cfg(feature = "logging")]
-        debug!("End parallel");
+        debug!("End parallel '{}", self.name);
         let mut lock_state = self.arc.mutex.lock();
         assert!(lock_state.parallels > 0);
         lock_state.parallels -= 1;
