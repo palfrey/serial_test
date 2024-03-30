@@ -36,6 +36,7 @@ impl<'a> Drop for MutexGuardWrapper<'a> {
 }
 
 impl Locks {
+    #[allow(unused_variables)]
     pub fn new(name: &str) -> Locks {
         Locks {
             arc: Arc::new(LockData {
