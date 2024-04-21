@@ -342,10 +342,10 @@ fn core_setup(
                                 attr.meta
                                     .path()
                                     .segments
-                                    .first()
-                                    .unwrap()
-                                    .ident
-                                    .to_string()
+                                    .iter()
+                                    .map(|s| s.ident.to_string())
+                                    .collect::<Vec<String>>()
+                                    .join("::")
                                     .contains("test")
                             }) =>
                         {
@@ -732,6 +732,42 @@ mod tests {
                 }
 
                 #[test]
+                fn bar() {
+                    serial_test::local_serial_core(vec![""], ::std::option::Option::None, || {} );
+                }
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    fn test_later_test_mod() {
+        init();
+        let attrs = proc_macro2::TokenStream::new();
+        let input = quote! {
+            #[cfg(test)]
+            #[serial]
+            mod serial_attr_tests {
+                pub fn foo() {
+                    println!("Nothing");
+                }
+
+                #[demo_library::test]
+                fn bar() {}
+            }
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[cfg(test)]
+            mod serial_attr_tests {
+                pub fn foo() {
+                    println!("Nothing");
+                }
+
+                #[demo_library::test]
                 fn bar() {
                     serial_test::local_serial_core(vec![""], ::std::option::Option::None, || {} );
                 }
