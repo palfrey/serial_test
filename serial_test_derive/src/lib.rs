@@ -779,6 +779,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "async")]
     fn test_mod_with_async() {
         init();
         let attrs = proc_macro2::TokenStream::new();
