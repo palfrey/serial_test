@@ -349,7 +349,9 @@ fn core_setup(
                                     .contains("test")
                             }) =>
                         {
-                            syn::parse2(fn_setup(item_fn, config, prefix, kind)).unwrap()
+                            let tokens = fn_setup(item_fn, config, prefix, kind);
+                            let token_display = format!("tokens: {tokens}");
+                            syn::parse2(tokens).expect(&token_display)
                         }
                         other => other,
                     })
@@ -405,12 +407,12 @@ fn fn_setup(
                 let fnname = format_ident!("{}_async_{}_core_with_return", prefix, kind);
                 let temp_fn = format_ident!("_{}_internal", name);
                 quote! {
-                    async fn #temp_fn () -> #ret
-                        #block
-
                     #(#attrs)
                     *
                     #vis async fn #name () -> #ret {
+                        async fn #temp_fn () -> #ret
+                        #block
+
                         #print_name
                         serial_test::#fnname(vec![#(#names ),*], #path, #temp_fn()).await
                     }
@@ -434,12 +436,12 @@ fn fn_setup(
                 let fnname = format_ident!("{}_async_{}_core", prefix, kind);
                 let temp_fn = format_ident!("_{}_internal", name);
                 quote! {
-                    async fn #temp_fn ()
-                        #block
-
                     #(#attrs)
                     *
                     #vis async fn #name () {
+                        async fn #temp_fn ()
+                        #block
+
                         #print_name
                         serial_test::#fnname(vec![#(#names ),*], #path, #temp_fn()).await;
                     }
@@ -573,8 +575,8 @@ mod tests {
         };
         let stream = local_serial_core(attrs.into(), input);
         let compare = quote! {
-            async fn _foo_internal () { }
             async fn foo () {
+                async fn _foo_internal () { }
                 serial_test::local_async_serial_core(vec![""], ::std::option::Option::None, _foo_internal() ).await;
             }
         };
@@ -591,8 +593,8 @@ mod tests {
         };
         let stream = local_serial_core(attrs.into(), input);
         let compare = quote! {
-            async fn _foo_internal ()  -> Result<(), ()> { Ok(()) }
             async fn foo () -> Result<(), ()> {
+                async fn _foo_internal ()  -> Result<(), ()> { Ok(()) }
                 serial_test::local_async_serial_core_with_return(vec![""], ::std::option::Option::None, _foo_internal() ).await
             }
         };
@@ -770,6 +772,51 @@ mod tests {
                 #[demo_library::test]
                 fn bar() {
                     serial_test::local_serial_core(vec![""], ::std::option::Option::None, || {} );
+                }
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    #[cfg(feature = "async")]
+    fn test_mod_with_async() {
+        init();
+        let attrs = proc_macro2::TokenStream::new();
+        let input = quote! {
+            #[cfg(test)]
+            #[serial]
+            mod serial_attr_tests {
+                #[demo_library::test]
+                async fn foo() -> Result<(), ()> {
+                    Ok(())
+                }
+
+                #[demo_library::test]
+                #[ignore = "bla"]
+                async fn bar() -> Result<(), ()> {
+                    Ok(())
+                }
+            }
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[cfg(test)]
+            mod serial_attr_tests {
+                #[demo_library::test]
+                async fn foo() -> Result<(), ()> {
+                    async fn _foo_internal() -> Result<(), ()> { Ok(())}
+                    serial_test::local_async_serial_core_with_return(vec![""], ::std::option::Option::None, _foo_internal() ).await
+                }
+
+                #[demo_library::test]
+                #[ignore = "bla"]
+                async fn bar() -> Result<(), ()> {
+                    async fn _bar_internal() -> Result<(), ()> { Ok(())}
+                    serial_test::local_async_serial_core_with_return(vec![""], ::std::option::Option::None, _bar_internal() ).await
                 }
             }
         };
