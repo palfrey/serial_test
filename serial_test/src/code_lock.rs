@@ -34,6 +34,10 @@ impl UniqueReentrantMutex {
     pub fn is_locked(&self) -> bool {
         self.locks.is_locked()
     }
+
+    pub fn is_locked_by_current_thread(&self) -> bool {
+        self.locks.is_locked_by_current_thread()
+    }
 }
 
 #[inline]
@@ -42,6 +46,63 @@ pub(crate) fn global_locks() -> &'static HashMap<String, UniqueReentrantMutex> {
     let _ = env_logger::builder().try_init();
     static LOCKS: OnceCell<HashMap<String, UniqueReentrantMutex>> = OnceCell::new();
     LOCKS.get_or_init(HashMap::new)
+}
+
+/// Check if the current thread is holding a serial lock
+///
+/// Can be used to assert that a piece of code can only be called
+/// from a test marked `#[serial]`.
+///
+/// Example, with `#[serial]`:
+///
+/// ```
+/// use serial_test::{is_locked_serially, serial};
+///
+/// fn do_something_in_need_of_serialization() {
+///     assert!(is_locked_serially(None));
+///
+///     // ...
+/// }
+///
+/// #[test]
+/// # fn unused() {}
+/// #[serial]
+/// fn main() {
+///     do_something_in_need_of_serialization();
+/// }
+/// ```
+///
+/// Example, missing `#[serial]`:
+///
+/// ```should_panic
+/// use serial_test::{is_locked_serially, serial};
+///
+/// #[test]
+/// # fn unused() {}
+/// // #[serial] // <-- missing
+/// fn main() {
+///     assert!(is_locked_serially(None));
+/// }
+/// ```
+///
+/// Example, `#[test(some_key)]`:
+///
+/// ```
+/// use serial_test::{is_locked_serially, serial};
+///
+/// #[test]
+/// # fn unused() {}
+/// #[serial(some_key)]
+/// fn main() {
+///     assert!(is_locked_serially(Some("some_key")));
+///     assert!(!is_locked_serially(None));
+/// }
+/// ```
+pub fn is_locked_serially(name: Option<&str>) -> bool {
+    global_locks()
+        .get(name.unwrap_or_default())
+        .map(|lock| lock.get().is_locked_by_current_thread())
+        .unwrap_or_default()
 }
 
 static MUTEX_ID: AtomicU32 = AtomicU32::new(1);
@@ -67,4 +128,67 @@ pub(crate) fn check_new_key(name: &str) {
         Entry::Occupied(o) => o,
         Entry::Vacant(v) => v.insert_entry(UniqueReentrantMutex::new_mutex(name)),
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{local_parallel_core, local_serial_core};
+
+    const NAME1: &str = "NAME1";
+    const NAME2: &str = "NAME2";
+
+    #[test]
+    fn assert_serially_locked_without_name() {
+        local_serial_core(vec![""], None, || {
+            assert!(is_locked_serially(None));
+            assert!(!is_locked_serially(Some("no_such_name")));
+        });
+    }
+
+    #[test]
+    fn assert_serially_locked_with_multiple_names() {
+        local_serial_core(vec![NAME1, NAME2], None, || {
+            assert!(is_locked_serially(Some(NAME1)));
+            assert!(is_locked_serially(Some(NAME2)));
+            assert!(!is_locked_serially(Some("no_such_name")));
+            assert!(!is_locked_serially(None));
+        });
+    }
+
+    #[test]
+    fn assert_serially_locked_when_actually_locked_parallel() {
+        local_parallel_core(vec![NAME1, NAME2], None, || {
+            assert!(!is_locked_serially(Some(NAME1)));
+            assert!(!is_locked_serially(Some(NAME2)));
+            assert!(!is_locked_serially(Some("no_such_name")));
+            assert!(!is_locked_serially(None));
+        });
+    }
+
+    #[test]
+    fn assert_serially_locked_outside_serial_lock() {
+        assert!(!is_locked_serially(Some(NAME1)));
+        assert!(!is_locked_serially(Some(NAME2)));
+        assert!(!is_locked_serially(None));
+
+        local_serial_core(vec![NAME1], None, || {
+            // ...
+        });
+
+        assert!(!is_locked_serially(Some(NAME1)));
+        assert!(!is_locked_serially(Some(NAME2)));
+        assert!(!is_locked_serially(None));
+    }
+
+    #[test]
+    fn assert_serially_locked_in_different_thread() {
+        local_serial_core(vec![NAME1, NAME2], None, || {
+            std::thread::spawn(|| {
+                assert!(!is_locked_serially(Some(NAME2)));
+            })
+            .join()
+            .unwrap();
+        });
+    }
 }

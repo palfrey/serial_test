@@ -112,3 +112,5 @@ pub use serial_test_derive::{parallel, serial};
 
 #[cfg(feature = "file_locks")]
 pub use serial_test_derive::{file_parallel, file_serial};
+
+pub use code_lock::is_locked_serially;
