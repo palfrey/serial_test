@@ -131,9 +131,9 @@ mod tests {
         unlock_ok(&lock_path);
     }
 
-    #[tokio::test]
+    #[test]
     #[cfg(feature = "async")]
-    async fn unlock_on_assert_async_without_return() {
+    fn unlock_on_assert_async_without_return() {
         let lock_path = path_for_name("unlock_on_assert_async_without_return");
         async fn demo_assert() {
             assert!(false);
@@ -147,18 +147,15 @@ mod tests {
             .await
         }
 
-        // as per https://stackoverflow.com/a/66529014/320546
         let _ = panic::catch_unwind(|| {
-            let handle = tokio::runtime::Handle::current();
-            let _enter_guard = handle.enter();
             futures::executor::block_on(call_serial_test_fn(&lock_path));
         });
         unlock_ok(&lock_path);
     }
 
-    #[tokio::test]
+    #[test]
     #[cfg(feature = "async")]
-    async fn unlock_on_assert_async_with_return() {
+    fn unlock_on_assert_async_with_return() {
         let lock_path = path_for_name("unlock_on_assert_async_with_return");
 
         async fn demo_assert() -> Result<(), Error> {
@@ -176,10 +173,7 @@ mod tests {
             .await;
         }
 
-        // as per https://stackoverflow.com/a/66529014/320546
         let _ = panic::catch_unwind(|| {
-            let handle = tokio::runtime::Handle::current();
-            let _enter_guard = handle.enter();
             futures::executor::block_on(call_serial_test_fn(&lock_path));
         });
         unlock_ok(&lock_path);

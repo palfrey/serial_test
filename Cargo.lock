@@ -442,7 +442,6 @@ dependencies = [
  "parking_lot",
  "scc",
  "serial_test_derive",
- "tokio",
 ]
 
 [[package]]
