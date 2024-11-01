@@ -81,3 +81,14 @@ jobs:
       - name: Remove lock
         run: rm Cargo.lock
       - run: cargo build -Z minimal-versions
+    
+  dependency-updates:
+    name: dependency updates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.5.0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: Update packages
+        run: cargo update
