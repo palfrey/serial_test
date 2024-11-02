@@ -18,7 +18,7 @@ syn = { version="2", features=["full"] }
 proc-macro2 = "1.0.60" # Because of https://github.com/dtolnay/proc-macro2/issues/356
 
 [dev-dependencies]
-env_logger = "0.10"
+env_logger = ">=0.6.1"
 prettyplease = "0.2"
 
 [features]

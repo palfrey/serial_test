@@ -81,3 +81,19 @@ jobs:
       - name: Remove lock
         run: rm Cargo.lock
       - run: cargo build -Z minimal-versions
+    
+  dependency-updates:
+    name: dependency updates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.5.0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Update packages
+        run: cargo update
+      - name: Build and test
+        run: cargo test --all-features -- --nocapture
+        env:
+          RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
+          RUST_LOG: debug

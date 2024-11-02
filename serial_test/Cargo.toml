@@ -16,15 +16,15 @@ parking_lot = "^0.12"
 serial_test_derive = { version = "~3.1.1", path = "../serial_test_derive" }
 fslock = { version = "0.2", optional = true }
 document-features = { version = "0.2", optional = true }
-log = { version = "0.4", optional = true }
+log = { version = ">=0.4.4", optional = true }
 futures = { version = "^0.3", default_features = false, features = [
     "executor",
 ], optional = true}
 scc = { version = "2"}
-env_logger = {version="0.10", optional=true}
+env_logger = {version=">=0.6.1", optional=true}
 
 [dev-dependencies]
-itertools = "0.10"
+itertools = ">=0.10"
 
 [features]
 default = ["logging", "async"]
