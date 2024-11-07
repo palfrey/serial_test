@@ -11,7 +11,7 @@ categories = ["development-tools::testing"]
 keywords = ["sequential", "testing", "parallel"]
 
 [dependencies]
-once_cell = {version="^1.19", default-features = false}
+once_cell = {version="^1.19", features = ["std"], default-features = false}
 parking_lot = {version="^0.12", default-features = false}
 serial_test_derive = { version = "~3.1.1", path = "../serial_test_derive" }
 fslock = { version = "0.2", optional = true, default-features = false, features = ["std"]}
