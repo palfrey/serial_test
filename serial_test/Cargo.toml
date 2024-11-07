@@ -11,37 +11,37 @@ categories = ["development-tools::testing"]
 keywords = ["sequential", "testing", "parallel"]
 
 [dependencies]
-once_cell = "^1.19"
-parking_lot = "^0.12"
+once_cell = {version="^1.19", features = ["std"], default-features = false}
+parking_lot = {version="^0.12", default-features = false}
 serial_test_derive = { version = "~3.1.1", path = "../serial_test_derive" }
-fslock = { version = "0.2", optional = true }
+fslock = { version = "0.2", optional = true, default-features = false, features = ["std"]}
 document-features = { version = "0.2", optional = true }
 log = { version = ">=0.4.4", optional = true }
 futures = { version = "^0.3", default-features = false, features = [
     "executor",
 ], optional = true}
-scc = { version = "2"}
-env_logger = {version=">=0.6.1", optional=true}
+scc = { version = "2", default-features = false}
+env_logger = {version=">=0.6.1", optional=true, default-features = false}
 
 [dev-dependencies]
-itertools = ">=0.10"
+itertools = {version=">=0.4", default-features = false, features = ["use_std"]}
 
 [features]
 default = ["logging", "async"]
 
-## Switches on debug logging (and requires the `log` package)
-logging = ["log"]
+## Switches on debug logging
+logging = ["dep:log"]
 
 ## Switches on debug with env_logger. Generally only needed by internal serial_test work.
-test_logging = ["logging", "env_logger", "serial_test_derive/test_logging"]
+test_logging = ["logging", "dep:env_logger", "serial_test_derive/test_logging"]
 
 ## Enables async features (and requires the `futures` package)
-async = ["futures", "serial_test_derive/async"]
+async = ["dep:futures", "serial_test_derive/async"]
 
-## The file_locks feature unlocks the `file_serial`/`file_parallel` macros (and requires the `fslock` package)
-file_locks = ["fslock"]
+## The file_locks feature unlocks the `file_serial`/`file_parallel` macros
+file_locks = ["dep:fslock"]
 
-docsrs = ["document-features"]
+docsrs = ["dep:document-features"]
 
 # docs.rs-specific configuration
 [package.metadata.docs.rs]
