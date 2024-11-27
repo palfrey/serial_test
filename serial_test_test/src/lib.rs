@@ -37,6 +37,8 @@
 //! ```
 
 use log::info;
+use once_cell::sync::OnceCell;
+use scc::HashMap;
 #[cfg(test)]
 use serial_test::{parallel, serial};
 use std::{
@@ -47,19 +49,24 @@ use std::{
     time::Duration,
 };
 
-static LOCK: AtomicUsize = AtomicUsize::new(0);
+static LOCKS: OnceCell<HashMap<String, AtomicUsize>> = OnceCell::new();
 
 fn init() {
     let _ = env_logger::builder().is_test(false).try_init();
 }
 
-pub fn test_fn(count: usize) {
+pub fn test_fn(key: &str, count: usize) {
     init();
+    let local_locks = LOCKS.get_or_init(HashMap::new);
+    let entry = local_locks
+        .entry(key.to_string())
+        .or_insert(AtomicUsize::new(0));
+    let local_lock = entry.get();
     info!("(non-fs) Start {}", count);
-    LOCK.store(count, Ordering::Relaxed);
+    local_lock.store(count, Ordering::Relaxed);
     thread::sleep(Duration::from_millis(1000 * (count as u64)));
     info!("(non-fs) End {}", count);
-    assert_eq!(LOCK.load(Ordering::Relaxed), count);
+    assert_eq!(local_lock.load(Ordering::Relaxed), count);
 }
 
 pub fn fs_test_fn(count: usize) {
@@ -134,19 +141,19 @@ mod tests {
     #[test]
     #[serial(alpha)]
     fn test_serial_1() {
-        test_fn(1)
+        test_fn("alpha", 1)
     }
 
     #[test]
     #[serial(alpha)]
     fn test_serial_2() {
-        test_fn(2)
+        test_fn("alpha", 2)
     }
 
     #[test]
     #[serial(alpha)]
     fn test_serial_3() {
-        test_fn(3)
+        test_fn("alpha", 3)
     }
 
     #[test]
@@ -394,4 +401,22 @@ mod tests {
     #[serial]
     #[wasm_bindgen_test]
     async fn wasm_works_second() {}
+
+    #[tokio::test(flavor = "multi_thread")]
+    #[serial(slt)]
+    async fn tokio_multi_1() {
+        test_fn("tokio", 1);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    #[serial(slt)]
+    async fn tokio_multi_2() {
+        test_fn("tokio", 2);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    #[serial(slt)]
+    async fn tokio_multi_3() {
+        test_fn("tokio", 3);
+    }
 }
