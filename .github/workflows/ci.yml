@@ -36,7 +36,7 @@ jobs:
         continue-on-error: ${{ matrix.rust == 'nightly' || matrix.rust == 'beta' }}
       - name: Install cargo-binstall
         run: |
-          curl --location --remote-name https://github.com/ryankurte/cargo-binstall/releases/download/v0.11.1/cargo-binstall-x86_64-unknown-linux-musl.tgz
+          curl --location --remote-name https://github.com/ryankurte/cargo-binstall/releases/download/v1.12.0/cargo-binstall-x86_64-unknown-linux-musl.tgz
           tar -zxvf cargo-binstall-x86_64-unknown-linux-musl.tgz
           mv cargo-binstall ~/.cargo/bin
           ls -l ~/.cargo/bin
