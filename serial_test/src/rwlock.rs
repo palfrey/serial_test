@@ -27,7 +27,7 @@ pub(crate) struct MutexGuardWrapper<'a> {
     locks: Locks,
 }
 
-impl<'a> Drop for MutexGuardWrapper<'a> {
+impl Drop for MutexGuardWrapper<'_> {
     fn drop(&mut self) {
         #[cfg(feature = "logging")]
         debug!("End serial");
