@@ -41,7 +41,7 @@ jobs:
           mv cargo-binstall ~/.cargo/bin
           ls -l ~/.cargo/bin
       - name: Install "build all features"
-        run: cargo binstall cargo-all-features --no-confirm --version 1.7.0
+        run: cargo binstall cargo-all-features --no-confirm --version 1.10.0
       - name: Build all features
         run: cargo build-all-features
       - name: Test all features
