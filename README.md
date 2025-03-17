@@ -3,7 +3,7 @@
 [![Downloads](https://img.shields.io/crates/d/serial_test)](https://crates.io/crates/serial_test)
 [![Docs](https://docs.rs/serial_test/badge.svg)](https://docs.rs/serial_test/)
 [![MIT license](https://img.shields.io/crates/l/serial_test.svg)](./LICENSE)
-[![Build Status](https://github.com/palfrey/serial_test/workflows/Continuous%20integration/badge.svg?branch=main)](https://github.com/palfrey/serial_test/actions)
+[![Build Status](https://github.com/palfrey/serial_test/actions/workflows/ci.yml/badge.svg)](https://github.com/palfrey/serial_test/actions)
 [![MSRV: 1.68.2](https://flat.badgen.net/badge/MSRV/1.68.2/purple)](https://blog.rust-lang.org/2023/03/28/Rust-1.68.2.html)
 
 `serial_test` allows for the creation of serialised Rust tests using the `serial` attribute
