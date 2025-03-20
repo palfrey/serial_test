@@ -822,4 +822,27 @@ mod tests {
         };
         compare_streams(compare, stream);
     }
+
+    #[test]
+    fn test_nested_return() {
+        init();
+        let attrs = proc_macro2::TokenStream::new();
+        let input = quote! {
+            #[test]
+            fn test() -> Result<Result<(), ()>, ()> {
+                Ok(Ok(()))
+            }
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn test() -> Result<Result<(), ()>, ()> {
+                serial_test::local_serial_core_with_return(vec![""], ::std::option::Option::None, || {Ok(Ok(()))} )
+            }
+        };
+        compare_streams(compare, stream);
+    }
 }

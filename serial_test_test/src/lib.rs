@@ -419,4 +419,17 @@ mod tests {
     async fn tokio_multi_3() {
         test_fn("tokio", 3);
     }
+
+    #[test]
+    #[serial]
+    fn nested_return() -> Result<Result<(), ()>, ()> {
+        Ok(Ok(()))
+    }
+
+    #[cfg(feature = "async")]
+    #[tokio::test]
+    #[serial]
+    async fn nested_async_return() -> Result<Result<(), ()>, ()> {
+        Ok(Ok(()))
+    }
 }
