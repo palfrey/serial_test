@@ -21,11 +21,11 @@ macro_rules! core_internal {
 }
 
 #[doc(hidden)]
-pub fn local_serial_core_with_return<E>(
+pub fn local_serial_core_with_return<R, E>(
     names: Vec<&str>,
     _path: Option<String>,
-    function: fn() -> Result<(), E>,
-) -> Result<(), E> {
+    function: fn() -> Result<R, E>,
+) -> Result<R, E> {
     core_internal!(names);
     function()
 }
@@ -38,11 +38,11 @@ pub fn local_serial_core(names: Vec<&str>, _path: Option<&str>, function: fn()) 
 
 #[doc(hidden)]
 #[cfg(feature = "async")]
-pub async fn local_async_serial_core_with_return<E>(
+pub async fn local_async_serial_core_with_return<R, E>(
     names: Vec<&str>,
     _path: Option<&str>,
-    fut: impl std::future::Future<Output = Result<(), E>> + std::marker::Send,
-) -> Result<(), E> {
+    fut: impl std::future::Future<Output = Result<R, E>> + std::marker::Send,
+) -> Result<R, E> {
     core_internal!(names);
     fut.await
 }
