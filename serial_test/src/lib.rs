@@ -59,6 +59,20 @@
 //!}
 //! ````
 //!
+//! All of the attributes support an optional `crate` argument for other macros generating
+//! the attributes, which lets them re-export the serial_test crate and supply an import path.
+//! This defaults to assuming it can just import `serial_test` for the use of internal functions.
+//! Note this is `crate = <import-path>` not `crate => <import-path>` unlike the `path` in [file_serial](macro@file_serial)
+//! for historical reasons
+//! ````
+//! // Assuming wrapper::refs:serial is a re-export of serial_test
+//! #[test]
+//! #[serial(crate = wrapper::refs:serial)]
+//! fn test_generated() {
+//!   // Do things
+//! }
+//! ````
+//!
 //! ## Feature flags
 #![cfg_attr(
     feature = "docsrs",

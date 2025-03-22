@@ -210,6 +210,7 @@ impl<T: ToTokens> ToTokens for QuoteOption<T> {
 struct Config {
     names: Vec<String>,
     path: QuoteOption<String>,
+    crate_ident: Vec<TokenTree>,
 }
 
 fn string_from_literal(literal: Literal) -> String {
@@ -226,10 +227,15 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
     let mut raw_args: Vec<String> = Vec::new();
     let mut in_path: bool = false;
     let mut path: Option<String> = None;
+    let mut in_crate: bool = false;
+    let mut crate_ident: Option<Vec<TokenTree>> = None;
     while !attrs.is_empty() {
         match attrs.remove(0) {
             TokenTree::Ident(id) if id.to_string().eq_ignore_ascii_case("path") => {
                 in_path = true;
+            }
+            TokenTree::Ident(id) if id.to_string().eq_ignore_ascii_case("crate") => {
+                in_crate = true;
             }
             TokenTree::Ident(id) => {
                 let name = id.to_string();
@@ -268,6 +274,35 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
             }
             in_path = false;
         }
+        if in_crate {
+            if attrs.len() < 2 {
+                panic!("Expected a '= <import-path>' after 'crate'");
+            }
+            match attrs.remove(0) {
+                TokenTree::Punct(p) if p.as_char() == '=' => {}
+                x => {
+                    panic!("Expected = after crate, not {}", x);
+                }
+            }
+            let ident_items: Vec<_> = attrs
+                .iter()
+                .map_while(|t| {
+                    match t {
+                        TokenTree::Ident(_) => {}
+                        TokenTree::Punct(p) if p.as_char() != ',' => {}
+                        _ => {
+                            return None;
+                        }
+                    };
+                    Some(t.clone())
+                })
+                .collect();
+            for _ in 0..ident_items.len() {
+                attrs.remove(0);
+            }
+            crate_ident = Some(ident_items);
+            in_crate = false;
+        }
         if !attrs.is_empty() {
             match attrs.remove(0) {
                 TokenTree::Punct(p) if p.as_char() == ',' => {}
@@ -284,6 +319,7 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
     Config {
         names: raw_args,
         path: QuoteOption(path),
+        crate_ident: crate_ident.unwrap_or(vec![TokenTree::Ident(format_ident!("serial_test"))]),
     }
 }
 
@@ -401,6 +437,7 @@ fn fn_setup(
     let attrs: Vec<syn::Attribute> = ast.attrs.into_iter().collect();
     let names = config.names.clone();
     let path = config.path.clone();
+    let crate_ident = config.crate_ident.clone();
     if let Some(ret) = return_type {
         match asyncness {
             Some(_) => {
@@ -414,7 +451,7 @@ fn fn_setup(
                         #block
 
                         #print_name
-                        serial_test::#fnname(vec![#(#names ),*], #path, #temp_fn()).await
+                        #(#crate_ident)*::#fnname(vec![#(#names ),*], #path, #temp_fn()).await
                     }
                 }
             }
@@ -425,7 +462,7 @@ fn fn_setup(
                     *
                     #vis fn #name () -> #ret {
                         #print_name
-                        serial_test::#fnname(vec![#(#names ),*], #path, || #block )
+                        #(#crate_ident)*::#fnname(vec![#(#names ),*], #path, || #block )
                     }
                 }
             }
@@ -443,7 +480,7 @@ fn fn_setup(
                         #block
 
                         #print_name
-                        serial_test::#fnname(vec![#(#names ),*], #path, #temp_fn()).await;
+                        #(#crate_ident)*::#fnname(vec![#(#names ),*], #path, #temp_fn()).await;
                     }
                 }
             }
@@ -454,7 +491,7 @@ fn fn_setup(
                     *
                     #vis fn #name () {
                         #print_name
-                        serial_test::#fnname(vec![#(#names ),*], #path, || #block );
+                        #(#crate_ident)*::#fnname(vec![#(#names ),*], #path, || #block );
                     }
                 }
             }
@@ -841,6 +878,76 @@ mod tests {
             #[test]
             fn test() -> Result<Result<(), ()>, ()> {
                 serial_test::local_serial_core_with_return(vec![""], ::std::option::Option::None, || {Ok(Ok(()))} )
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    fn test_crate_wrapper() {
+        init();
+        let attrs: Vec<_> = quote! { crate = wrapper::__derive_refs::serial }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = fs_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                wrapper::__derive_refs::serial::fs_serial_core(vec![""], ::std::option::Option::None, || {} );
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    fn test_crate_wrapper_with_path() {
+        init();
+        let attrs: Vec<_> = quote! {crate = wrapper::__derive_refs::serial, path => "/tmp/bar" }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = fs_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                wrapper::__derive_refs::serial::fs_serial_core(vec![""], ::std::option::Option::Some("/tmp/bar"), || {} );
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    fn test_crate_wrapper_with_path_and_key() {
+        init();
+        let attrs: Vec<_> =
+            quote! { key1, key2, path => "/tmp/bar", crate = wrapper::__derive_refs::serial }
+                .into_iter()
+                .collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = fs_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                wrapper::__derive_refs::serial::fs_serial_core(vec!["key1", "key2"], ::std::option::Option::Some("/tmp/bar"), || {} );
             }
         };
         compare_streams(compare, stream);
