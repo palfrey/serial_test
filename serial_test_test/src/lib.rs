@@ -432,4 +432,10 @@ mod tests {
     async fn nested_async_return() -> Result<Result<(), ()>, ()> {
         Ok(Ok(()))
     }
+
+    #[test]
+    #[serial(crate = serial_test)]
+    fn crate_path() {
+        init();
+    }
 }
