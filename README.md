@@ -9,6 +9,8 @@
 `serial_test` allows for the creation of serialised Rust tests using the `serial` attribute
 e.g.
 ```rust
+use serial_test::serial;
+
 #[test]
 #[serial]
 fn test_serial_one() {
