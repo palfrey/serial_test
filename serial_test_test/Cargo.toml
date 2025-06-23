@@ -19,7 +19,7 @@ log = { version = ">=0.4.4" , default-features = false }
 scc = { version = "2", default-features = false}
 
 [dev-dependencies]
-tokio = { version = "^1.45", features = ["macros", "rt", "rt-multi-thread"], default-features = false }
+tokio = { version = "=1.38.2", features = ["macros", "rt", "rt-multi-thread"], default-features = false }
 actix-rt = { version = "^2.8", features = ["macros"], default-features = false }
 futures-util = {version = "^0.3", default-features = false }
 
