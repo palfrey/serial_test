@@ -127,7 +127,7 @@ fn make_lock_for_name_and_path(name: &str, path: Option<&str>) -> Lock {
 
 pub(crate) fn get_locks(names: &Vec<&str>, path: Option<&str>) -> Vec<Lock> {
     if names.len() > 1 && path.is_some() {
-        panic!("Can't do file_parallel with both more than one name _and_ a specific path");
+        panic!("Can't do file_serial/parallel with both more than one name _and_ a specific path");
     }
     names
         .iter()
