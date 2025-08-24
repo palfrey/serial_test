@@ -77,17 +77,19 @@ impl Lock {
         #[cfg(feature = "logging")]
         debug!("Checking lock on {:?}", path);
 
-        if lockfile.owns_lock() {
-            true
-        } else if lockfile
+        if lockfile
             .try_lock()
             .expect("try_lock shouldn't generally fail, please provide a bug report")
         {
+            #[cfg(feature = "test_logging")]
+            debug!("{:?} wasn't locked", path);
             lockfile
                 .unlock()
                 .expect("unlock shouldn't generally fail, please provide a bug report");
             false
         } else {
+            #[cfg(feature = "test_logging")]
+            debug!("{:?} was locked", path);
             true
         }
     }
