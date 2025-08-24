@@ -113,6 +113,9 @@ pub use serial_file_lock::{fs_async_serial_core, fs_async_serial_core_with_retur
 #[doc(hidden)]
 pub use serial_file_lock::{fs_serial_core, fs_serial_core_with_return};
 
+#[cfg(feature = "file_locks")]
+pub use file_lock::is_locked_file_serially;
+
 #[cfg(all(feature = "file_locks", feature = "async"))]
 #[doc(hidden)]
 pub use parallel_file_lock::{fs_async_parallel_core, fs_async_parallel_core_with_return};
