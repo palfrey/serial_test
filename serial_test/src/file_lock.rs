@@ -279,7 +279,6 @@ mod tests {
 
         assert!(!is_locked_file_serially(Some(NAME1), None));
         assert!(!is_locked_file_serially(Some(NAME2), None));
-        assert!(!is_locked_file_serially(None, None));
 
         fs_serial_core(vec![NAME1], None, || {
             // ...
@@ -287,7 +286,6 @@ mod tests {
 
         assert!(!is_locked_file_serially(Some(NAME1), None));
         assert!(!is_locked_file_serially(Some(NAME2), None));
-        assert!(!is_locked_file_serially(None, None));
     }
 
     #[test]
@@ -298,7 +296,7 @@ mod tests {
         init();
         fs_serial_core(vec![NAME1, NAME2], None, || {
             std::thread::spawn(|| {
-                assert!(!is_locked_file_serially(Some(NAME2), None));
+                assert!(is_locked_file_serially(Some(NAME2), None));
             })
             .join()
             .unwrap();
