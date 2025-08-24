@@ -230,6 +230,7 @@ mod tests {
     use crate::{fs_parallel_core, fs_serial_core};
 
     fn init() {
+        #[cfg(feature = "test_logging")]
         let _ = env_logger::builder().is_test(false).try_init();
     }
 
