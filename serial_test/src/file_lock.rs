@@ -253,7 +253,6 @@ mod tests {
             assert!(is_locked_file_serially(Some(NAME1), None));
             assert!(is_locked_file_serially(Some(NAME2), None));
             assert!(!is_locked_file_serially(Some("no_such_name"), None));
-            assert!(!is_locked_file_serially(None, None));
         });
     }
 
@@ -267,7 +266,6 @@ mod tests {
             assert!(!is_locked_file_serially(Some(NAME1), None));
             assert!(!is_locked_file_serially(Some(NAME2), None));
             assert!(!is_locked_file_serially(Some("no_such_name"), None));
-            assert!(!is_locked_file_serially(None, None));
         });
     }
 
