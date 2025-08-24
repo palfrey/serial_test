@@ -58,7 +58,7 @@ impl Locks {
         self.arc.serial.is_owned_by_current_thread()
     }
 
-    pub fn serial(&self) -> MutexGuardWrapper {
+    pub fn serial(&self) -> MutexGuardWrapper<'_> {
         #[cfg(feature = "logging")]
         debug!("Get serial lock '{}'", self.name);
         let mut lock_state = self.arc.mutex.lock();
