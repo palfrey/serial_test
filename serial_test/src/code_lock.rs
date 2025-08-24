@@ -13,7 +13,7 @@ pub(crate) struct UniqueReentrantMutex {
 }
 
 impl UniqueReentrantMutex {
-    pub(crate) fn lock(&self) -> MutexGuardWrapper {
+    pub(crate) fn lock(&self) -> MutexGuardWrapper<'_> {
         self.locks.serial()
     }
 
