@@ -139,7 +139,9 @@ mod tests {
     fn assert_serially_locked_without_name() {
         local_serial_core(vec![""], None, || {
             assert!(is_locked_serially(None));
-            assert!(!is_locked_serially(Some("no_such_name_assert_serially_locked_without_name")));
+            assert!(!is_locked_serially(Some(
+                "no_such_name_assert_serially_locked_without_name"
+            )));
         });
     }
 
@@ -150,7 +152,9 @@ mod tests {
         local_serial_core(vec![NAME1, NAME2], None, || {
             assert!(is_locked_serially(Some(NAME1)));
             assert!(is_locked_serially(Some(NAME2)));
-            assert!(!is_locked_serially(Some("no_such_name_assert_serially_locked_with_multiple_names")));
+            assert!(!is_locked_serially(Some(
+                "no_such_name_assert_serially_locked_with_multiple_names"
+            )));
         });
     }
 
@@ -161,7 +165,9 @@ mod tests {
         local_parallel_core(vec![NAME1, NAME2], None, || {
             assert!(!is_locked_serially(Some(NAME1)));
             assert!(!is_locked_serially(Some(NAME2)));
-            assert!(!is_locked_serially(Some("no_such_name_assert_serially_locked_when_actually_locked_parallel")));
+            assert!(!is_locked_serially(Some(
+                "no_such_name_assert_serially_locked_when_actually_locked_parallel"
+            )));
         });
     }
 

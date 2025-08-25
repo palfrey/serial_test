@@ -241,7 +241,10 @@ mod tests {
         init();
         fs_serial_core(vec![""], None, || {
             assert!(is_locked_file_serially(None, None));
-            assert!(!is_locked_file_serially(Some("no_such_name_assert_serially_locked_without_name"), None));
+            assert!(!is_locked_file_serially(
+                Some("no_such_name_assert_serially_locked_without_name"),
+                None
+            ));
         });
     }
 
@@ -254,7 +257,10 @@ mod tests {
         fs_serial_core(vec![NAME1, NAME2], None, || {
             assert!(is_locked_file_serially(Some(NAME1), None));
             assert!(is_locked_file_serially(Some(NAME2), None));
-            assert!(!is_locked_file_serially(Some("no_such_name_assert_serially_locked_with_multiple_names"), None));
+            assert!(!is_locked_file_serially(
+                Some("no_such_name_assert_serially_locked_with_multiple_names"),
+                None
+            ));
         });
     }
 
@@ -267,7 +273,10 @@ mod tests {
         fs_parallel_core(vec![NAME1, NAME2], None, || {
             assert!(!is_locked_file_serially(Some(NAME1), None));
             assert!(!is_locked_file_serially(Some(NAME2), None));
-            assert!(!is_locked_file_serially(Some("no_such_name_assert_serially_locked_when_actually_locked_parallel"), None));
+            assert!(!is_locked_file_serially(
+                Some("no_such_name_assert_serially_locked_when_actually_locked_parallel"),
+                None
+            ));
         });
     }
 
