@@ -43,11 +43,18 @@ impl Lock {
         parallel_count
     }
 
-    pub(crate) fn new(path: &str) -> Lock {
+    fn create_lockfile(path: &str) -> LockFile {
         if !Path::new(path).exists() {
             fs::write(path, "").unwrap_or_else(|_| panic!("Lock file path was {:?}", path))
         }
-        let mut lockfile = LockFile::open(path).unwrap();
+        LockFile::open(path).unwrap()
+    }
+
+    pub(crate) fn new(path: &str) -> Lock {
+        #[cfg(feature = "test_logging")]
+        let _ = env_logger::builder().try_init();
+
+        let mut lockfile = Self::create_lockfile(path);
 
         #[cfg(feature = "logging")]
         debug!("Waiting on {:?}", path);
@@ -64,6 +71,29 @@ impl Lock {
         }
     }
 
+    pub(crate) fn is_locked(path: &str) -> bool {
+        let mut lockfile = Self::create_lockfile(path);
+
+        #[cfg(feature = "logging")]
+        debug!("Checking lock on {:?}", path);
+
+        if lockfile
+            .try_lock()
+            .expect("try_lock shouldn't generally fail, please provide a bug report")
+        {
+            #[cfg(feature = "test_logging")]
+            debug!("{:?} wasn't locked", path);
+            lockfile
+                .unlock()
+                .expect("unlock shouldn't generally fail, please provide a bug report");
+            false
+        } else {
+            #[cfg(feature = "test_logging")]
+            debug!("{:?} was locked", path);
+            true
+        }
+    }
+
     pub(crate) fn start_serial(self: &mut Lock) {
         loop {
             if self.parallel_count == 0 {
@@ -73,8 +103,10 @@ impl Lock {
             debug!("Waiting because parallel count is {}", self.parallel_count);
             // unlock here is safe because we re-lock before returning
             self.unlock();
-            thread::sleep(Duration::from_secs(1));
-            self.lockfile.lock().unwrap();
+            thread::sleep(Duration::from_millis(50));
+            self.lockfile
+                .lock()
+                .expect("unlock shouldn't generally fail, please provide a bug report");
             #[cfg(feature = "logging")]
             debug!("Locked for {:?}", self.path);
             self.parallel_count = Lock::read_parallel_count(&self.path)
@@ -133,4 +165,150 @@ pub(crate) fn get_locks(names: &Vec<&str>, path: Option<&str>) -> Vec<Lock> {
         .iter()
         .map(|name| make_lock_for_name_and_path(name, path))
         .collect::<Vec<_>>()
+}
+
+/// Check if the current thread is holding a `file_serial` lock
+///
+/// Can be used to assert that a piece of code can only be called
+/// from a test marked `#[file_serial]`.
+///
+/// Example, with `#[file_serial]`:
+///
+/// ```no_run
+/// use serial_test::{is_locked_file_serially, file_serial};
+///
+/// fn do_something_in_need_of_serialization() {
+///     assert!(is_locked_file_serially(None, None));
+///
+///     // ...
+/// }
+///
+/// #[test]
+/// # fn unused() {}
+/// #[file_serial]
+/// fn main() {
+///     do_something_in_need_of_serialization();
+/// }
+/// ```
+///
+/// Example, missing `#[file_serial]`:
+///
+/// ```no_run
+/// use serial_test::{is_locked_file_serially, file_serial};
+///
+/// #[test]
+/// # fn unused() {}
+/// // #[file_serial] // <-- missing
+/// fn main() {
+///     assert!(is_locked_file_serially(None, None));
+/// }
+/// ```
+///
+/// Example, `#[test(some_key)]`:
+///
+/// ```no_run
+/// use serial_test::{is_locked_file_serially, file_serial};
+///
+/// #[test]
+/// # fn unused() {}
+/// #[file_serial(some_key)]
+/// fn main() {
+///     assert!(is_locked_file_serially(Some("some_key"), None));
+///     assert!(!is_locked_file_serially(None, None));
+/// }
+/// ```
+pub fn is_locked_file_serially(name: Option<&str>, path: Option<&str>) -> bool {
+    if let Some(opt_path) = path {
+        Lock::is_locked(opt_path)
+    } else {
+        let default_path = path_for_name(name.unwrap_or_default());
+        Lock::is_locked(&default_path)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{fs_parallel_core, fs_serial_core};
+
+    fn init() {
+        #[cfg(feature = "test_logging")]
+        let _ = env_logger::builder().is_test(false).try_init();
+    }
+
+    #[test]
+    fn assert_serially_locked_without_name() {
+        init();
+        fs_serial_core(vec![""], None, || {
+            assert!(is_locked_file_serially(None, None));
+            assert!(!is_locked_file_serially(
+                Some("no_such_name_assert_serially_locked_without_name"),
+                None
+            ));
+        });
+    }
+
+    #[test]
+    fn assert_serially_locked_with_multiple_names() {
+        const NAME1: &str = "assert_serially_locked_with_multiple_names-NAME1";
+        const NAME2: &str = "assert_serially_locked_with_multiple_names-NAME2";
+        init();
+
+        fs_serial_core(vec![NAME1, NAME2], None, || {
+            assert!(is_locked_file_serially(Some(NAME1), None));
+            assert!(is_locked_file_serially(Some(NAME2), None));
+            assert!(!is_locked_file_serially(
+                Some("no_such_name_assert_serially_locked_with_multiple_names"),
+                None
+            ));
+        });
+    }
+
+    #[test]
+    fn assert_serially_locked_when_actually_locked_parallel() {
+        const NAME1: &str = "assert_serially_locked_when_actually_locked_parallel-NAME1";
+        const NAME2: &str = "assert_serially_locked_when_actually_locked_parallel-NAME2";
+        init();
+
+        fs_parallel_core(vec![NAME1, NAME2], None, || {
+            assert!(!is_locked_file_serially(Some(NAME1), None));
+            assert!(!is_locked_file_serially(Some(NAME2), None));
+            assert!(!is_locked_file_serially(
+                Some("no_such_name_assert_serially_locked_when_actually_locked_parallel"),
+                None
+            ));
+        });
+    }
+
+    #[test]
+    fn assert_serially_locked_outside_serial_lock() {
+        const NAME1: &str = "assert_serially_locked_outside_serial_lock-NAME1";
+        const NAME2: &str = "assert_serially_locked_outside_serial_lock-NAME2";
+        init();
+
+        assert!(!is_locked_file_serially(Some(NAME1), None));
+        assert!(!is_locked_file_serially(Some(NAME2), None));
+
+        fs_serial_core(vec![NAME1], None, || {
+            // ...
+        });
+
+        assert!(!is_locked_file_serially(Some(NAME1), None));
+        assert!(!is_locked_file_serially(Some(NAME2), None));
+    }
+
+    #[test]
+    fn assert_serially_locked_in_different_thread() {
+        const NAME1: &str = "assert_serially_locked_in_different_thread-NAME1";
+        const NAME2: &str = "assert_serially_locked_in_different_thread-NAME2";
+
+        init();
+        fs_serial_core(vec![NAME1, NAME2], None, || {
+            std::thread::spawn(|| {
+                assert!(is_locked_file_serially(Some(NAME2), None));
+            })
+            .join()
+            .unwrap();
+        });
+    }
 }
