@@ -17,9 +17,9 @@ serial_test_derive = { version = "~3.2.0", path = "../serial_test_derive" }
 fslock = { version = "0.2", optional = true, default-features = false, features = ["std"]}
 document-features = { version = "0.2", optional = true }
 log = { version = ">=0.4.4", optional = true }
-futures = { version = "^0.3", default-features = false, features = [
-    "executor",
-], optional = true}
+futures-executor = { version = "^0.3", optional = true, default-features = false, features = ["std"] }
+futures-util = { version = "^0.3", optional = true, default-features = false, features = ["std"] }
+
 scc = { version = "2", default-features = false}
 env_logger = {version=">=0.6.1", optional=true, default-features = false}
 
@@ -36,7 +36,7 @@ logging = ["dep:log"]
 test_logging = ["logging", "dep:env_logger", "serial_test_derive/test_logging"]
 
 ## Enables async features (and requires the `futures` package)
-async = ["dep:futures", "serial_test_derive/async"]
+async = ["dep:futures-executor", "dep:futures-util", "serial_test_derive/async"]
 
 ## The file_locks feature unlocks the `file_serial`/`file_parallel` macros
 file_locks = ["dep:fslock"]
