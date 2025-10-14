@@ -4,6 +4,7 @@ use crate::file_lock::get_locks;
 
 #[doc(hidden)]
 pub fn fs_serial_core(names: Vec<&str>, path: Option<&str>, function: fn()) {
+    assert!(names.len() > 0);
     let mut locks = get_locks(&names, path);
     locks.iter_mut().for_each(|lock| lock.start_serial());
     let res = panic::catch_unwind(function);
