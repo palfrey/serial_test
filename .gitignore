@@ -2,3 +2,4 @@ target/
 *.jpg
 .DS_Store
 .vscode/
+serial_test_test/relative

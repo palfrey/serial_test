@@ -6,7 +6,7 @@
 //! #[cfg(feature = "file_locks")]
 //! #[serial_test::file_serial]
 //! fn main() {
-//! fs_test_fn(1);
+//! fs_test_fn(1, "docs");
 //! }
 //! #[cfg(not(feature = "file_locks"))]
 //! fn main() {}
@@ -18,7 +18,7 @@
 //! #[cfg(feature = "file_locks")]
 //! #[serial_test::file_serial]
 //! fn main() {
-//! fs_test_fn(2);
+//! fs_test_fn(2, "docs");
 //! }
 //! #[cfg(not(feature = "file_locks"))]
 //! fn main() {}
@@ -30,7 +30,7 @@
 //! #[cfg(feature = "file_locks")]
 //! #[serial_test::file_serial]
 //! fn main() {
-//! fs_test_fn(3);
+//! fs_test_fn(3, "docs");
 //! }
 //! #[cfg(not(feature = "file_locks"))]
 //! fn main() {}
@@ -44,6 +44,7 @@ use serial_test::{parallel, serial};
 use std::{
     convert::TryInto,
     env, fs,
+    path::PathBuf,
     sync::atomic::{AtomicUsize, Ordering},
     thread,
     time::Duration,
@@ -69,11 +70,16 @@ pub fn test_fn(key: &str, count: usize) {
     assert_eq!(local_lock.load(Ordering::Relaxed), count);
 }
 
-pub fn fs_test_fn(count: usize) {
+fn get_fs_path() -> PathBuf {
+    static FS_PATH: OnceCell<PathBuf> = OnceCell::new();
+    FS_PATH.get_or_init(env::temp_dir).clone()
+}
+
+pub fn fs_test_fn(count: usize, suffix: &str) {
     init();
     info!("(fs) Start {}", count);
-    let mut pathbuf = env::temp_dir();
-    pathbuf.push("serial-test-test");
+    let mut pathbuf = get_fs_path();
+    pathbuf.push(format!("serial-test-test_{suffix}"));
     fs::write(pathbuf.as_path(), count.to_ne_bytes()).unwrap();
     thread::sleep(Duration::from_millis(1000 * (count as u64)));
     info!("(fs) End {}", count);
@@ -91,6 +97,9 @@ mod serial_attr_tests {}
 #[cfg(test)]
 #[parallel]
 mod parallel_attr_tests {}
+
+#[cfg(feature = "file_locks")]
+pub const RELATIVE_FS: &str = "relative-fs";
 
 #[cfg(test)]
 mod tests {
@@ -223,24 +232,27 @@ mod tests {
     }
 
     #[cfg(feature = "file_locks")]
+    const BASIC_FS_CHECK: &str = "basic-fs";
+
+    #[cfg(feature = "file_locks")]
     #[test]
     #[file_serial]
     fn test_file_1() {
-        fs_test_fn(1);
+        fs_test_fn(1, BASIC_FS_CHECK);
     }
 
     #[cfg(feature = "file_locks")]
     #[test]
     #[file_serial]
     fn test_file_2() {
-        fs_test_fn(2);
+        fs_test_fn(2, BASIC_FS_CHECK);
     }
 
     #[cfg(feature = "file_locks")]
     #[test]
     #[file_serial]
     fn test_file_3() {
-        fs_test_fn(3);
+        fs_test_fn(3, BASIC_FS_CHECK);
     }
 
     #[cfg(all(feature = "file_locks", not(windows)))]
