@@ -2,7 +2,7 @@
 
 use crate::code_lock::{check_new_key, global_locks};
 #[cfg(feature = "async")]
-use futures::FutureExt;
+use futures_util::FutureExt;
 use std::panic;
 
 fn get_locks(names: Vec<&str>) -> Vec<crate::code_lock::UniqueReentrantMutex> {
@@ -149,7 +149,7 @@ mod tests {
         }
         // as per https://stackoverflow.com/a/66529014/320546
         let _ = panic::catch_unwind(|| {
-            futures::executor::block_on(call_serial_test_fn());
+            futures_executor::block_on(call_serial_test_fn());
         });
         assert_eq!(
             global_locks()
@@ -181,7 +181,7 @@ mod tests {
 
         // as per https://stackoverflow.com/a/66529014/320546
         let _ = panic::catch_unwind(|| {
-            futures::executor::block_on(call_serial_test_fn());
+            futures_executor::block_on(call_serial_test_fn());
         });
         assert_eq!(
             global_locks()

@@ -1,7 +1,7 @@
 use std::panic;
 
 #[cfg(feature = "async")]
-use futures::FutureExt;
+use futures_util::FutureExt;
 
 use crate::file_lock::get_locks;
 
@@ -148,7 +148,7 @@ mod tests {
         }
 
         let _ = panic::catch_unwind(|| {
-            futures::executor::block_on(call_serial_test_fn(&lock_path));
+            futures_executor::block_on(call_serial_test_fn(&lock_path));
         });
         unlock_ok(&lock_path);
     }
@@ -174,7 +174,7 @@ mod tests {
         }
 
         let _ = panic::catch_unwind(|| {
-            futures::executor::block_on(call_serial_test_fn(&lock_path));
+            futures_executor::block_on(call_serial_test_fn(&lock_path));
         });
         unlock_ok(&lock_path);
     }
