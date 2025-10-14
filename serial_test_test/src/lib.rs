@@ -72,7 +72,7 @@ pub fn test_fn(key: &str, count: usize) {
 
 fn get_fs_path() -> PathBuf {
     static FS_PATH: OnceCell<PathBuf> = OnceCell::new();
-    FS_PATH.get_or_init(|| env::temp_dir()).clone()
+    FS_PATH.get_or_init(env::temp_dir).clone()
 }
 
 pub fn fs_test_fn(count: usize, suffix: &str) {
