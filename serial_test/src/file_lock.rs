@@ -122,7 +122,10 @@ fn make_lock_for_name_and_path(name: &str, path_str: Option<&str>) -> Lock {
         {
             let path = Path::new(opt_path);
             if !path.is_absolute() {
-                debug!("Non-absolute path {opt_path} becomes {:?}", path.canonicalize().unwrap());
+                debug!(
+                    "Non-absolute path {opt_path} becomes {:?}",
+                    path.canonicalize().unwrap()
+                );
             }
         }
         Lock::new(opt_path)

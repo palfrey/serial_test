@@ -42,7 +42,12 @@ use scc::HashMap;
 #[cfg(test)]
 use serial_test::{parallel, serial};
 use std::{
-    convert::TryInto, env, fs, path::PathBuf, sync::atomic::{AtomicUsize, Ordering}, thread, time::Duration
+    convert::TryInto,
+    env, fs,
+    path::PathBuf,
+    sync::atomic::{AtomicUsize, Ordering},
+    thread,
+    time::Duration,
 };
 
 static LOCKS: OnceCell<HashMap<String, AtomicUsize>> = OnceCell::new();
@@ -95,7 +100,6 @@ mod parallel_attr_tests {}
 
 #[cfg(feature = "file_locks")]
 pub const RELATIVE_FS: &str = "relative-fs";
-
 
 #[cfg(test)]
 mod tests {
