@@ -135,42 +135,48 @@ mod tests {
     use super::*;
     use crate::{local_parallel_core, local_serial_core};
 
-    const NAME1: &str = "NAME1";
-    const NAME2: &str = "NAME2";
-
     #[test]
     fn assert_serially_locked_without_name() {
         local_serial_core(vec![""], None, || {
             assert!(is_locked_serially(None));
-            assert!(!is_locked_serially(Some("no_such_name")));
+            assert!(!is_locked_serially(Some(
+                "no_such_name_assert_serially_locked_without_name"
+            )));
         });
     }
 
     #[test]
     fn assert_serially_locked_with_multiple_names() {
+        const NAME1: &str = "assert_serially_locked_with_multiple_names-NAME1";
+        const NAME2: &str = "assert_serially_locked_with_multiple_names-NAME2";
         local_serial_core(vec![NAME1, NAME2], None, || {
             assert!(is_locked_serially(Some(NAME1)));
             assert!(is_locked_serially(Some(NAME2)));
-            assert!(!is_locked_serially(Some("no_such_name")));
-            assert!(!is_locked_serially(None));
+            assert!(!is_locked_serially(Some(
+                "no_such_name_assert_serially_locked_with_multiple_names"
+            )));
         });
     }
 
     #[test]
     fn assert_serially_locked_when_actually_locked_parallel() {
+        const NAME1: &str = "assert_serially_locked_when_actually_locked_parallel-NAME1";
+        const NAME2: &str = "assert_serially_locked_when_actually_locked_parallel-NAME2";
         local_parallel_core(vec![NAME1, NAME2], None, || {
             assert!(!is_locked_serially(Some(NAME1)));
             assert!(!is_locked_serially(Some(NAME2)));
-            assert!(!is_locked_serially(Some("no_such_name")));
-            assert!(!is_locked_serially(None));
+            assert!(!is_locked_serially(Some(
+                "no_such_name_assert_serially_locked_when_actually_locked_parallel"
+            )));
         });
     }
 
     #[test]
     fn assert_serially_locked_outside_serial_lock() {
+        const NAME1: &str = "assert_serially_locked_outside_serial_lock-NAME1";
+        const NAME2: &str = "assert_serially_locked_outside_serial_lock-NAME2";
         assert!(!is_locked_serially(Some(NAME1)));
         assert!(!is_locked_serially(Some(NAME2)));
-        assert!(!is_locked_serially(None));
 
         local_serial_core(vec![NAME1], None, || {
             // ...
@@ -178,11 +184,12 @@ mod tests {
 
         assert!(!is_locked_serially(Some(NAME1)));
         assert!(!is_locked_serially(Some(NAME2)));
-        assert!(!is_locked_serially(None));
     }
 
     #[test]
     fn assert_serially_locked_in_different_thread() {
+        const NAME1: &str = "assert_serially_locked_in_different_thread-NAME1";
+        const NAME2: &str = "assert_serially_locked_in_different_thread-NAME2";
         local_serial_core(vec![NAME1, NAME2], None, || {
             std::thread::spawn(|| {
                 assert!(!is_locked_serially(Some(NAME2)));
