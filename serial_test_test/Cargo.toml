@@ -13,7 +13,7 @@ once_cell = { version="^1.19", default-features = false }
 env_logger = { version=">=0.6.1", default-features = false }
 parking_lot = { version="^0.12", default-features = false }
 lock_api = { version="^0.4.7", default-features = false }
-wasm-bindgen-test = {version="^0.3.50", optional=true, default-features = false }
+wasm-bindgen-test = {version="^0.3.50", optional=true, default-features = false, features=["std"] }
 scoped-tls = { version="1", optional=true, default-features = false }
 log = { version = ">=0.4.4" , default-features = false }
 scc = { version = "2", default-features = false}
