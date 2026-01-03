@@ -3,3 +3,4 @@ target/
 .DS_Store
 .vscode/
 serial_test_test/relative
+serial_test_test/tests/cucumber.lock

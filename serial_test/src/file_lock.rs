@@ -5,7 +5,7 @@ use std::{
     env,
     fs::{self, File},
     io::{Read, Write},
-    path::Path,
+    path::{Component, Path, PathBuf},
     thread,
     time::Duration,
 };
@@ -45,7 +45,7 @@ impl Lock {
 
     fn create_lockfile(path: &str) -> LockFile {
         if !Path::new(path).exists() {
-            fs::write(path, "").unwrap_or_else(|_| panic!("Lock file path was {:?}", path))
+            fs::write(path, "").unwrap_or_else(|_| panic!("Lock file path was {:?}, which does not exist", path))
         }
         LockFile::open(path).unwrap()
     }
@@ -148,6 +148,35 @@ pub(crate) fn path_for_name(name: &str) -> String {
     pathbuf.into_os_string().into_string().unwrap()
 }
 
+// From https://github.com/rust-lang/cargo/blob/fede83ccf973457de319ba6fa0e36ead454d2e20/src/cargo/util/paths.rs#L61
+// Drop when we hit 1.79.0 and can use path::absolute
+fn normalize_path(path: &Path) -> PathBuf {
+    let mut components = path.components().peekable();
+    let mut ret = if let Some(c @ Component::Prefix(..)) = components.peek().cloned() {
+        components.next();
+        PathBuf::from(c.as_os_str())
+    } else {
+        PathBuf::new()
+    };
+
+    for component in components {
+        match component {
+            Component::Prefix(..) => unreachable!(),
+            Component::RootDir => {
+                ret.push(component.as_os_str());
+            }
+            Component::CurDir => {}
+            Component::ParentDir => {
+                ret.pop();
+            }
+            Component::Normal(c) => {
+                ret.push(c);
+            }
+        }
+    }
+    ret
+}
+
 fn make_lock_for_name_and_path(name: &str, path_str: Option<&str>) -> Lock {
     if let Some(opt_path) = path_str {
         #[cfg(feature = "logging")]
@@ -156,7 +185,7 @@ fn make_lock_for_name_and_path(name: &str, path_str: Option<&str>) -> Lock {
             if !path.is_absolute() {
                 debug!(
                     "Non-absolute path {opt_path} becomes {:?}",
-                    path.canonicalize().unwrap()
+                    Path::join(&env::current_dir().unwrap(), normalize_path(path))
                 );
             }
         }
@@ -168,6 +197,9 @@ fn make_lock_for_name_and_path(name: &str, path_str: Option<&str>) -> Lock {
 }
 
 pub(crate) fn get_locks(names: &Vec<&str>, path: Option<&str>) -> Vec<Lock> {
+    #[cfg(feature = "test_logging")]
+    let _ = env_logger::builder().try_init();
+
     if names.len() > 1 && path.is_some() {
         panic!("Can't do file_serial/parallel with both more than one name _and_ a specific path");
     }
