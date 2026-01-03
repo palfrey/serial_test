@@ -1,7 +1,6 @@
-#[cfg(feature = "file_locks")]
+#![cfg(feature="file_locks")]
 use serial_test::file_serial;
 
-#[cfg(feature = "file_locks")]
 #[test]
 #[file_serial(path => "./relative")]
 fn test_file_relative_1() {

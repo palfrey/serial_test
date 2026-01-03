@@ -101,6 +101,9 @@ mod parallel_attr_tests {}
 #[cfg(feature = "file_locks")]
 pub const RELATIVE_FS: &str = "relative-fs";
 
+#[cfg(feature = "file_locks")]
+pub const CUCUMBER_FS: &str = "cucumber-fs";
+
 #[cfg(test)]
 mod tests {
     use super::{init, test_fn};
