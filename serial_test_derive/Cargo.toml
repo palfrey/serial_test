@@ -25,3 +25,4 @@ prettyplease = {version="0.2", default-features = false}
 default = []
 async = []
 test_logging = []
+file_locks = []
