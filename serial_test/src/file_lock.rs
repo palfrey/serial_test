@@ -170,7 +170,7 @@ fn make_lock_for_name_and_path(name: &str, path_str: Option<&str>) -> Lock {
 pub(crate) fn get_locks(names: &Vec<&str>, path: Option<&str>) -> Vec<Lock> {
     #[cfg(feature = "test_logging")]
     let _ = env_logger::builder().try_init();
-    
+
     if names.len() > 1 && path.is_some() {
         panic!("Can't do file_serial/parallel with both more than one name _and_ a specific path");
     }
