@@ -32,14 +32,16 @@ default = ["logging", "async"]
 ## Switches on debug logging
 logging = ["dep:log"]
 
-## Switches on debug with env_logger. Generally only needed by internal serial_test work.
-test_logging = ["logging", "dep:env_logger", "serial_test_derive/test_logging"]
-
-## Enables async features (and requires the `futures` package)
+## Enables async features using `futures`
 async = ["dep:futures-executor", "dep:futures-util", "serial_test_derive/async"]
 
 ## The file_locks feature unlocks the `file_serial`/`file_parallel` macros
 file_locks = ["dep:fslock"]
+
+#! ### Internal-only features
+
+## Switches on debug with `env_logger`. Generally only needed by internal `serial_test` work.
+test_logging = ["logging", "dep:env_logger", "serial_test_derive/test_logging"]
 
 docsrs = ["dep:document-features"]
 
