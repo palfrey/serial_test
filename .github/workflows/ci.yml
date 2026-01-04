@@ -39,7 +39,7 @@ jobs:
       - name: Build all features
         run: cargo build-all-features
       - name: Test all features
-        run: cargo test-all-features -- --nocapture
+        run: cargo test-all-features -- -- --nocapture
         env:
           RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
           RUST_LOG: debug
