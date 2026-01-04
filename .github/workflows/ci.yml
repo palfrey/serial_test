@@ -91,3 +91,16 @@ jobs:
         env:
           RUST_TEST_THREADS: 3 # So the parallel tests have enough threads
           RUST_LOG: debug
+
+  # As per https://github.com/dtolnay/cargo-docs-rs?tab=readme-ov-file#example
+  doc:
+    name: Documentation
+    runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: -Dwarnings
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/install@cargo-docs-rs
+      - run: cargo docs-rs -p serial_test
+      - run: cargo docs-rs -p serial_test_derive
