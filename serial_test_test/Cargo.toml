@@ -24,7 +24,8 @@ actix-rt = { version = "^2.8", features = ["macros"], default-features = false }
 futures-util = {version = "^0.3", default-features = false }
 
 [features]
-default = ["serial_test/logging", "async", "serial_test/test_logging"]
+default = ["logging", "async"]
+logging = ["serial_test/logging", "serial_test/test_logging"]
 file_locks = ["serial_test/file_locks"]
 async = ["serial_test/async", "dep:wasm-bindgen-test", "dep:scoped-tls"]
 
