@@ -31,6 +31,8 @@ use syn::Result as SynResult;
 /// of the tests is not guaranteed however. If you have other tests that can be run in parallel, but would clash
 /// if run at the same time as the [serial](macro@serial) tests, you can use the [parallel](macro@parallel) attribute.
 ///
+/// ## Serial Keys
+///
 /// If you want different subsets of tests to be serialised with each
 /// other, but not depend on other subsets, you can add a key argument to [serial](macro@serial), and all calls
 /// with identical arguments will be called in serial. Multiple comma-separated keys will make a test run in serial with all of the sets with any of those keys.
