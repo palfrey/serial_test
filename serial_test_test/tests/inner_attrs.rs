@@ -37,4 +37,3 @@ fn test_serial_with_multiple_inner_attrs() {
 fn test_serial_inner_timeout_panics() {
     std::thread::sleep(std::time::Duration::from_secs(1));
 }
-

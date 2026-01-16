@@ -9,8 +9,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::{Literal, TokenTree};
 use quote::{format_ident, quote, ToTokens, TokenStreamExt};
-use std::iter::FromIterator;
-use std::ops::Deref;
+use std::{iter::FromIterator, ops::Deref};
 use syn::Result as SynResult;
 
 /// Allows for the creation of serialised Rust tests
