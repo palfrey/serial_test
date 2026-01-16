@@ -9,6 +9,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::{Literal, TokenTree};
 use quote::{format_ident, quote, ToTokens, TokenStreamExt};
+use std::iter::FromIterator;
 use std::ops::Deref;
 use syn::Result as SynResult;
 
@@ -69,6 +70,38 @@ use syn::Result as SynResult;
 /// but neither sequence will be blocked by the other. `test_serial_fifth` is blocked by tests in either sequence.
 ///
 /// Nested serialised tests (i.e. a [serial](macro@serial) tagged test calling another) are supported.
+///
+/// ## Inner Attributes
+///
+/// You can apply attributes to an inner test function using `inner_attrs`. This is useful for
+/// applying attributes like `ntest::timeout` that should only affect the test body, not the
+/// mutex acquisition:
+///
+/// ````no_run
+/// #[test]
+/// #[serial(inner_attrs = [ntest::timeout(1000)])]
+/// fn test_with_timeout() {
+///   // The timeout only applies to this body, not the serial lock acquisition
+/// }
+/// ````
+///
+/// Multiple inner attributes can be specified:
+/// ````no_run
+/// #[test]
+/// #[serial(inner_attrs = [ntest::timeout(1000), other_attr])]
+/// fn test_with_multiple_attrs() {
+///   // Both attributes apply to the inner function
+/// }
+/// ````
+///
+/// Inner attributes can be combined with keys:
+/// ````no_run
+/// #[test]
+/// #[serial(my_key, inner_attrs = [ntest::timeout(1000)])]
+/// fn test_with_key_and_timeout() {
+///   // Serialized with 'my_key' group, with timeout on the body
+/// }
+/// ````
 #[proc_macro_attribute]
 pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
     local_serial_core(attr.into(), input.into()).into()
@@ -102,6 +135,8 @@ pub fn serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// Note that this has zero effect on [file_serial](macro@file_serial) tests, as that uses a different
 /// serialisation mechanism. For that, you want [file_parallel](macro@file_parallel).
+///
+/// Inner attributes are also supported via `inner_attrs`, see [serial](macro@serial) for details.
 #[proc_macro_attribute]
 pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
     local_parallel_core(attr.into(), input.into()).into()
@@ -145,6 +180,8 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 ///   // Do things
 /// }
 /// ````
+///
+/// Inner attributes are also supported via `inner_attrs`, see [serial](macro@serial) for details.
 #[proc_macro_attribute]
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
@@ -191,6 +228,8 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 ///   // Do things
 /// }
 /// ````
+///
+/// Inner attributes are also supported via `inner_attrs`, see [serial](macro@serial) for details.
 #[proc_macro_attribute]
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
@@ -215,6 +254,7 @@ struct Config {
     names: Vec<String>,
     path: QuoteOption<String>,
     crate_ident: Vec<TokenTree>,
+    inner_attrs: Vec<proc_macro2::TokenStream>,
 }
 
 fn string_from_literal(literal: Literal) -> String {
@@ -226,6 +266,33 @@ fn string_from_literal(literal: Literal) -> String {
     string_literal[1..string_literal.len() - 1].to_string()
 }
 
+/// Parse the contents of a bracket group `[attr1(args), attr2]` into a vector of token streams
+/// where each element represents a single attribute.
+fn parse_inner_attrs_from_group(group: proc_macro2::Group) -> Vec<proc_macro2::TokenStream> {
+    let mut inner_attrs = Vec::new();
+    let mut current_attr: Vec<TokenTree> = Vec::new();
+
+    for token in group.stream() {
+        let is_comma = matches!(&token, TokenTree::Punct(p) if p.as_char() == ',');
+
+        if is_comma {
+            // End of current attribute
+            if !current_attr.is_empty() {
+                inner_attrs.push(proc_macro2::TokenStream::from_iter(current_attr.drain(..)));
+            }
+        } else {
+            current_attr.push(token);
+        }
+    }
+
+    // Don't forget the last attribute
+    if !current_attr.is_empty() {
+        inner_attrs.push(proc_macro2::TokenStream::from_iter(current_attr));
+    }
+
+    inner_attrs
+}
+
 fn get_config(attr: proc_macro2::TokenStream) -> Config {
     let mut attrs = attr.into_iter().collect::<Vec<TokenTree>>();
     let mut raw_args: Vec<String> = Vec::new();
@@ -233,6 +300,8 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
     let mut path: Option<String> = None;
     let mut in_crate: bool = false;
     let mut crate_ident: Option<Vec<TokenTree>> = None;
+    let mut in_inner_attrs: bool = false;
+    let mut inner_attrs: Vec<proc_macro2::TokenStream> = Vec::new();
     while !attrs.is_empty() {
         match attrs.remove(0) {
             TokenTree::Ident(id) if id.to_string().eq_ignore_ascii_case("path") => {
@@ -240,6 +309,9 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
             }
             TokenTree::Ident(id) if id.to_string().eq_ignore_ascii_case("crate") => {
                 in_crate = true;
+            }
+            TokenTree::Ident(id) if id.to_string().eq_ignore_ascii_case("inner_attrs") => {
+                in_inner_attrs = true;
             }
             TokenTree::Ident(id) => {
                 let name = id.to_string();
@@ -307,6 +379,26 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
             crate_ident = Some(ident_items);
             in_crate = false;
         }
+        if in_inner_attrs {
+            if attrs.len() < 2 {
+                panic!("Expected a '= [attr1, attr2, ...]' after 'inner_attrs'");
+            }
+            match attrs.remove(0) {
+                TokenTree::Punct(p) if p.as_char() == '=' => {}
+                x => {
+                    panic!("Expected = after inner_attrs, not {}", x);
+                }
+            }
+            match attrs.remove(0) {
+                TokenTree::Group(group) if group.delimiter() == proc_macro2::Delimiter::Bracket => {
+                    inner_attrs = parse_inner_attrs_from_group(group);
+                }
+                x => {
+                    panic!("Expected [...] after inner_attrs =, not {}", x);
+                }
+            }
+            in_inner_attrs = false;
+        }
         if !attrs.is_empty() {
             match attrs.remove(0) {
                 TokenTree::Punct(p) if p.as_char() == ',' => {}
@@ -324,6 +416,7 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
         names: raw_args,
         path: QuoteOption(path),
         crate_ident: crate_ident.unwrap_or(vec![TokenTree::Ident(format_ident!("serial_test"))]),
+        inner_attrs,
     }
 }
 
@@ -442,6 +535,8 @@ fn fn_setup(
     let names = config.names.clone();
     let path = config.path.clone();
     let crate_ident = config.crate_ident.clone();
+    let inner_attrs = &config.inner_attrs;
+    let has_inner_attrs = !inner_attrs.is_empty();
     if let Some(ret) = return_type {
         match asyncness {
             Some(_) => {
@@ -451,6 +546,7 @@ fn fn_setup(
                     #(#attrs)
                     *
                     #vis async fn #name () -> #ret {
+                        #(#[#inner_attrs])*
                         async fn #temp_fn () -> #ret
                         #block
 
@@ -461,12 +557,28 @@ fn fn_setup(
             }
             None => {
                 let fnname = format_ident!("{}_{}_core_with_return", prefix, kind);
-                quote! {
-                    #(#attrs)
-                    *
-                    #vis fn #name () -> #ret {
-                        #print_name
-                        #(#crate_ident)*::#fnname(vec![#(#names ),*], #path, || #block )
+                if has_inner_attrs {
+                    let temp_fn = format_ident!("_{}_inner", name);
+                    quote! {
+                        #(#attrs)
+                        *
+                        #vis fn #name () -> #ret {
+                            #(#[#inner_attrs])*
+                            fn #temp_fn () -> #ret
+                            #block
+
+                            #print_name
+                            #(#crate_ident)*::#fnname(vec![#(#names ),*], #path, || #temp_fn() )
+                        }
+                    }
+                } else {
+                    quote! {
+                        #(#attrs)
+                        *
+                        #vis fn #name () -> #ret {
+                            #print_name
+                            #(#crate_ident)*::#fnname(vec![#(#names ),*], #path, || #block )
+                        }
                     }
                 }
             }
@@ -480,6 +592,7 @@ fn fn_setup(
                     #(#attrs)
                     *
                     #vis async fn #name () {
+                        #(#[#inner_attrs])*
                         async fn #temp_fn ()
                         #block
 
@@ -490,12 +603,28 @@ fn fn_setup(
             }
             None => {
                 let fnname = format_ident!("{}_{}_core", prefix, kind);
-                quote! {
-                    #(#attrs)
-                    *
-                    #vis fn #name () {
-                        #print_name
-                        #(#crate_ident)*::#fnname(vec![#(#names ),*], #path, || #block );
+                if has_inner_attrs {
+                    let temp_fn = format_ident!("_{}_inner", name);
+                    quote! {
+                        #(#attrs)
+                        *
+                        #vis fn #name () {
+                            #(#[#inner_attrs])*
+                            fn #temp_fn ()
+                            #block
+
+                            #print_name
+                            #(#crate_ident)*::#fnname(vec![#(#names ),*], #path, || #temp_fn() );
+                        }
+                    }
+                } else {
+                    quote! {
+                        #(#attrs)
+                        *
+                        #vis fn #name () {
+                            #print_name
+                            #(#crate_ident)*::#fnname(vec![#(#names ),*], #path, || #block );
+                        }
                     }
                 }
             }
@@ -521,8 +650,8 @@ fn parallel_setup(
 
 #[cfg(test)]
 mod tests {
-    use super::{fs_serial_core, local_serial_core};
-    use proc_macro2::TokenStream;
+    use super::{fs_serial_core, local_parallel_core, local_serial_core};
+    use proc_macro2::{TokenStream, TokenTree};
     use quote::quote;
     use std::iter::FromIterator;
 
@@ -955,5 +1084,266 @@ mod tests {
             }
         };
         compare_streams(compare, stream);
+    }
+
+    #[test]
+    fn test_inner_attrs_single() {
+        init();
+        let attrs: Vec<_> = quote! { inner_attrs = [timeout(100)] }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                #[timeout(100)]
+                fn _foo_inner() {}
+                serial_test::local_serial_core(vec![""], ::std::option::Option::None, || _foo_inner() );
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    fn test_inner_attrs_multiple() {
+        init();
+        let attrs: Vec<_> = quote! { inner_attrs = [timeout(100), other_attr] }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                #[timeout(100)]
+                #[other_attr]
+                fn _foo_inner() {}
+                serial_test::local_serial_core(vec![""], ::std::option::Option::None, || _foo_inner() );
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    fn test_inner_attrs_with_key() {
+        init();
+        let attrs: Vec<_> = quote! { my_key, inner_attrs = [timeout(100)] }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                #[timeout(100)]
+                fn _foo_inner() {}
+                serial_test::local_serial_core(vec!["my_key"], ::std::option::Option::None, || _foo_inner() );
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    fn test_inner_attrs_with_return() {
+        init();
+        let attrs: Vec<_> = quote! { inner_attrs = [timeout(100)] }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            #[test]
+            fn foo() -> Result<(), ()> { Ok(()) }
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () -> Result<(), ()> {
+                #[timeout(100)]
+                fn _foo_inner() -> Result<(), ()> { Ok(()) }
+                serial_test::local_serial_core_with_return(vec![""], ::std::option::Option::None, || _foo_inner() )
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    #[cfg(feature = "async")]
+    fn test_inner_attrs_async() {
+        init();
+        let attrs: Vec<_> = quote! { inner_attrs = [timeout(100)] }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            async fn foo() {}
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            async fn foo () {
+                #[timeout(100)]
+                async fn _foo_internal () { }
+                serial_test::local_async_serial_core(vec![""], ::std::option::Option::None, _foo_internal() ).await;
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
+
+    #[test]
+    #[cfg(feature = "async")]
+    fn test_inner_attrs_async_with_return() {
+        init();
+        let attrs: Vec<_> = quote! { inner_attrs = [timeout(100)] }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            async fn foo() -> Result<(), ()> { Ok(()) }
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            async fn foo () -> Result<(), ()> {
+                #[timeout(100)]
+                async fn _foo_internal () -> Result<(), ()> { Ok(()) }
+                serial_test::local_async_serial_core_with_return(vec![""], ::std::option::Option::None, _foo_internal() ).await
+            }
+        };
+        assert_eq!(format!("{}", compare), format!("{}", stream));
+    }
+
+    #[test]
+    fn test_inner_attrs_with_namespaced_attr() {
+        init();
+        let attrs: Vec<_> = quote! { inner_attrs = [ntest::timeout(100)] }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                #[ntest::timeout(100)]
+                fn _foo_inner() {}
+                serial_test::local_serial_core(vec![""], ::std::option::Option::None, || _foo_inner() );
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    fn test_inner_attrs_parallel() {
+        init();
+        let attrs: Vec<_> = quote! { inner_attrs = [timeout(100)] }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        let stream = local_parallel_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+        let compare = quote! {
+            #[test]
+            fn foo () {
+                #[timeout(100)]
+                fn _foo_inner() {}
+                serial_test::local_parallel_core(vec![""], ::std::option::Option::None, || _foo_inner() );
+            }
+        };
+        compare_streams(compare, stream);
+    }
+
+    #[test]
+    #[should_panic(expected = "Expected = after inner_attrs")]
+    fn test_inner_attrs_missing_equals() {
+        // Use a comma after the bracket to ensure we get past the length check
+        let attrs: Vec<TokenTree> = quote! { inner_attrs [timeout(100)], foo }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Expected [...] after inner_attrs =")]
+    fn test_inner_attrs_missing_brackets() {
+        let attrs: Vec<TokenTree> = quote! { inner_attrs = timeout(100) }.into_iter().collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Expected a '= [attr1, attr2, ...]' after 'inner_attrs'")]
+    fn test_inner_attrs_nothing_after() {
+        let attrs: Vec<TokenTree> = quote! { inner_attrs }.into_iter().collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Expected [...] after inner_attrs =")]
+    fn test_inner_attrs_wrong_delimiter() {
+        // Using parentheses instead of brackets
+        let attrs: Vec<TokenTree> = quote! { inner_attrs = (timeout(100)) }
+            .into_iter()
+            .collect();
+        let input = quote! {
+            #[test]
+            fn foo() {}
+        };
+        local_serial_core(
+            proc_macro2::TokenStream::from_iter(attrs.into_iter()),
+            input,
+        );
     }
 }

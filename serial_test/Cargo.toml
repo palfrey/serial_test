@@ -25,6 +25,8 @@ env_logger = {version=">=0.6.1", optional=true, default-features = false}
 
 [dev-dependencies]
 itertools = {version=">=0.4", default-features = false, features = ["use_std"]}
+# Used for integration test with a crate that provides attribute macros
+ntest = {version=">=0.9", default-features = false}
 
 [features]
 default = ["logging", "async"]
