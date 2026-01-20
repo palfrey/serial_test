@@ -1287,7 +1287,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Expected = after inner_attrs")]
+    #[should_panic(expected = "Expected '=' after 'inner_attrs'")]
     fn test_inner_attrs_missing_equals() {
         // Use a comma after the bracket to ensure we get past the length check
         let attrs: Vec<TokenTree> = quote! { inner_attrs [timeout(100)], foo }
@@ -1304,7 +1304,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Expected [...] after inner_attrs =")]
+    #[should_panic(expected = "Expected [...] after 'inner_attrs ='")]
     fn test_inner_attrs_missing_brackets() {
         let attrs: Vec<TokenTree> = quote! { inner_attrs = timeout(100) }.into_iter().collect();
         let input = quote! {
@@ -1332,7 +1332,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Expected [...] after inner_attrs =")]
+    #[should_panic(expected = "Expected [...] after 'inner_attrs ='")]
     fn test_inner_attrs_wrong_delimiter() {
         // Using parentheses instead of brackets
         let attrs: Vec<TokenTree> = quote! { inner_attrs = (timeout(100)) }
