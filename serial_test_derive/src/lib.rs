@@ -387,7 +387,7 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
             match attrs.remove(0) {
                 TokenTree::Punct(p) if p.as_char() == '=' => {}
                 x => {
-                    panic!("Expected = after inner_attrs, not {}", x);
+                    panic!("Expected '=' after 'inner_attrs' not {}", x);
                 }
             }
             match attrs.remove(0) {
@@ -395,7 +395,7 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
                     inner_attrs = parse_inner_attrs_from_group(group);
                 }
                 x => {
-                    panic!("Expected [...] after inner_attrs =, not {}", x);
+                    panic!("Expected [...] after 'inner_attrs =' not {}", x);
                 }
             }
             in_inner_attrs = false;
@@ -404,7 +404,7 @@ fn get_config(attr: proc_macro2::TokenStream) -> Config {
             match attrs.remove(0) {
                 TokenTree::Punct(p) if p.as_char() == ',' => {}
                 x => {
-                    panic!("Expected , between args, not {}", x);
+                    panic!("Expected ',' between args not {}", x);
                 }
             }
         }

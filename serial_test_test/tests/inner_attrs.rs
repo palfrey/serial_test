@@ -1,4 +1,4 @@
-//! Tests for the inner_attrs feature with ntest::timeout
+//! Tests for the inner_attrs feature with ntest::timeout and std attributes
 
 use serial_test::{parallel, serial};
 
@@ -36,4 +36,11 @@ fn test_serial_with_multiple_inner_attrs() {
 #[serial(inner_attrs = [ntest::timeout(10)])]
 fn test_serial_inner_timeout_panics() {
     std::thread::sleep(std::time::Duration::from_secs(1));
+}
+
+/// Test with allow attribute
+#[test]
+#[serial(inner_attrs = [allow(unused_variables)])]
+fn test_serial_with_inner_allow() {
+    let _unused = 42;
 }
