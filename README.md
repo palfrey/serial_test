@@ -37,6 +37,20 @@ similar properties but based off file locking. Note that there are no guarantees
 
 All of the attributes can also be applied at a `mod` level and will be automagically applied to all test functions in that block.
 
+## Inner Attributes
+
+You can apply attributes to an inner test function using `inner_attrs`. This is useful for applying attributes like `ntest::timeout` that should only affect the test body, not the mutex/lock acquisition:
+
+```rust
+#[test]
+#[serial(inner_attrs = [ntest::timeout(1000)])]
+fn test_with_timeout() {
+  // The timeout only applies to this body, not the serial lock acquisition
+}
+```
+
+This can be combined with keys: `#[serial(my_key, inner_attrs = [timeout(1000)])]`
+
 ## Usage
 The minimum supported Rust version here is 1.68.2. Note this is minimum _supported_, as it may well compile with lower versions, but they're not supported at all. Upgrades to this will require at a major version bump. 1.x supports 1.51 if you need a lower version than that.
 

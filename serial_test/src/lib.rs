@@ -73,6 +73,30 @@
 //! }
 //! ````
 //!
+//! ## Inner Attributes
+//!
+//! You can apply attributes to an inner test function using `inner_attrs`. This is useful for
+//! applying attributes like `ntest::timeout` that should only affect the test body, not the
+//! mutex/lock acquisition. Without this, a timeout would start counting from when the test is
+//! waiting for the lock, not when the actual test logic starts.
+//!
+//! ````
+//! #[test]
+//! #[serial(inner_attrs = [ntest::timeout(1000)])]
+//! fn test_with_timeout() {
+//!   // The timeout only applies to this body, not the serial lock acquisition
+//! }
+//! ````
+//!
+//! You can combine `inner_attrs` with keys and other options:
+//! ````
+//! #[test]
+//! #[serial(my_key, inner_attrs = [ntest::timeout(1000)])]
+//! fn test_with_key_and_timeout() {
+//!   // Serialized with 'my_key' group, with timeout on the body
+//! }
+//! ````
+//!
 //! ## Feature flags
 #![cfg_attr(
     feature = "docsrs",
