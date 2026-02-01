@@ -55,7 +55,7 @@ pub(crate) fn global_locks() -> &'static HashMap<String, UniqueReentrantMutex> {
 ///
 /// Example, with `#[serial]`:
 ///
-/// ```
+/// ```no_run
 /// use serial_test::{is_locked_serially, serial};
 ///
 /// fn do_something_in_need_of_serialization() {
@@ -74,7 +74,7 @@ pub(crate) fn global_locks() -> &'static HashMap<String, UniqueReentrantMutex> {
 ///
 /// Example, missing `#[serial]`:
 ///
-/// ```should_panic
+/// ```should_panic,no_run
 /// use serial_test::{is_locked_serially, serial};
 ///
 /// #[test]
@@ -87,7 +87,7 @@ pub(crate) fn global_locks() -> &'static HashMap<String, UniqueReentrantMutex> {
 ///
 /// Example, `#[test(some_key)]`:
 ///
-/// ```
+/// ```no_run
 /// use serial_test::{is_locked_serially, serial};
 ///
 /// #[test]
