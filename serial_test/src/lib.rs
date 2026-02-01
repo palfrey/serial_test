@@ -6,7 +6,7 @@
 //! # serial_test
 //! `serial_test` allows for the creation of serialised Rust tests using the [serial](macro@serial) attribute
 //! e.g.
-//! ````
+//! ````no_run
 //! #[test]
 //! #[serial]
 //! fn test_serial_one() {
@@ -34,7 +34,7 @@
 //! [file_serial](macro@file_serial)/[file_parallel](macro@file_parallel), with similar properties but based off file locking. Note that there are no
 //! guarantees about one test with [serial](macro@serial)/[parallel](macro@parallel) and another with [file_serial](macro@file_serial)/[file_parallel](macro@file_parallel)
 //! as they lock using different methods.
-//! ````
+//! ````no_run
 //! #[test]
 //! #[file_serial]
 //! fn test_serial_three() {
@@ -43,7 +43,7 @@
 //! ````
 //!
 //! All of the attributes can also be applied at a `mod` level and will be automagically applied to all test functions in that block
-//! ````
+//! ````no_run
 //! #[cfg(test)]
 //! #[serial]
 //! mod serial_attr_tests {
@@ -64,7 +64,7 @@
 //! This defaults to assuming it can just import `serial_test` for the use of internal functions.
 //! Note this is `crate = <import-path>` not `crate => <import-path>` unlike the `path` in [file_serial](macro@file_serial)
 //! for historical reasons
-//! ````
+//! ````no_run
 //! // Assuming wrapper::refs:serial is a re-export of serial_test
 //! #[test]
 //! #[serial(crate = wrapper::refs:serial)]
@@ -80,7 +80,7 @@
 //! mutex/lock acquisition. Without this, a timeout would start counting from when the test is
 //! waiting for the lock, not when the actual test logic starts.
 //!
-//! ````
+//! ````no_run
 //! #[test]
 //! #[serial(inner_attrs = [ntest::timeout(1000)])]
 //! fn test_with_timeout() {
@@ -89,7 +89,7 @@
 //! ````
 //!
 //! You can combine `inner_attrs` with keys and other options:
-//! ````
+//! ````no_run
 //! #[test]
 //! #[serial(my_key, inner_attrs = [ntest::timeout(1000)])]
 //! fn test_with_key_and_timeout() {
