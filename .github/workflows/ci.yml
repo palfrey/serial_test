@@ -11,7 +11,7 @@ name: Continuous integration
 jobs:
   test:
     name: Test suite
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         rust:
@@ -66,7 +66,7 @@ jobs:
 
   minimal-versions:
     name: minimal versions check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3.5.0
       - uses: dtolnay/rust-toolchain@stable
@@ -78,7 +78,7 @@ jobs:
     
   dependency-updates:
     name: dependency updates
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3.5.0
       - uses: dtolnay/rust-toolchain@stable
@@ -95,7 +95,7 @@ jobs:
   # As per https://github.com/dtolnay/cargo-docs-rs?tab=readme-ov-file#example
   doc:
     name: Documentation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       RUSTDOCFLAGS: -Dwarnings
     steps:
@@ -104,3 +104,12 @@ jobs:
       - uses: dtolnay/install@cargo-docs-rs
       - run: cargo docs-rs -p serial_test
       - run: cargo docs-rs -p serial_test_derive
+
+  audit:
+    name: Audit
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install cargo-audit --locked
+      - run: cargo audit --deny warnings
