@@ -476,7 +476,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test"
-version = "3.3.1"
+version = "3.4.0"
 dependencies = [
  "document-features",
  "env_logger",
@@ -493,7 +493,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test_derive"
-version = "3.3.1"
+version = "3.4.0"
 dependencies = [
  "env_logger",
  "prettyplease",
@@ -504,7 +504,7 @@ dependencies = [
 
 [[package]]
 name = "serial_test_test"
-version = "3.3.1"
+version = "3.4.0"
 dependencies = [
  "actix-rt",
  "env_logger",
