@@ -35,12 +35,8 @@ jobs:
         env:
           RUSTFLAGS: -Dwarnings
         continue-on-error: ${{ matrix.rust == 'nightly' || matrix.rust == 'beta' }}
-      - name: Install "build all features" 1.12
+      - name: Install "build all features"
         run: cargo install cargo-all-features --version 1.12.0 --force --locked
-        if: ${{ matrix.rust != '1.93.1' }}
-      - name: Install "build all features" 1.10
-        run: cargo install cargo-all-features --version 1.10.0 --force --locked
-        if: ${{ matrix.rust == '1.93.1' }}
       - name: Build all features
         run: cargo build-all-features
       - name: Test all features
