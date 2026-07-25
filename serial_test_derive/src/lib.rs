@@ -663,9 +663,10 @@ mod tests {
     fn unparse(input: TokenStream) -> String {
         let item = syn::parse2(input).unwrap();
         let file = syn::File {
+            shebang: None,
+            frontmatter: None,
             attrs: vec![],
             items: vec![item],
-            shebang: None,
         };
 
         prettyplease::unparse(&file)
