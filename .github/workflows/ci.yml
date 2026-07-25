@@ -133,3 +133,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install cargo-audit --locked
       - run: cargo audit --deny warnings
+
+  # Placeholder to be marked as required in PRs and which depends on all other steps
+  finish:
+      needs: [test, audit, doc, dependency-updates, minimal-versions, miri, multi-os-testing]
+      runs-on: ubuntu-24.04
+      steps:
+          - name: Done
+            run: echo "All finished"
