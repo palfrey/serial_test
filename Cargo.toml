@@ -2,4 +2,4 @@
 members = ["serial_test", "serial_test_derive", "serial_test_test"]
 
 [workspace.package]
-rust-version = "1.93.1"
+rust-version = "1.71.0"

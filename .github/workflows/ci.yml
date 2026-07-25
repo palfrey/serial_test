@@ -19,7 +19,7 @@ jobs:
           - stable
           - beta
           - nightly
-          - 1.93.1
+          - 1.71.0
     steps:
       - uses: actions/checkout@v3.5.0
       - uses: dtolnay/rust-toolchain@stable
