@@ -19,7 +19,7 @@ jobs:
           - stable
           - beta
           - nightly
-          - 1.71.0
+          - 1.93.1
     steps:
       - uses: actions/checkout@v3.5.0
       - uses: dtolnay/rust-toolchain@stable
@@ -35,12 +35,8 @@ jobs:
         env:
           RUSTFLAGS: -Dwarnings
         continue-on-error: ${{ matrix.rust == 'nightly' || matrix.rust == 'beta' }}
-      - name: Install "build all features" 1.12
+      - name: Install "build all features"
         run: cargo install cargo-all-features --version 1.12.0 --force --locked
-        if: ${{ matrix.rust != '1.71.0' }}
-      - name: Install "build all features" 1.10
-        run: cargo install cargo-all-features --version 1.10.0 --force --locked
-        if: ${{ matrix.rust == '1.71.0' }}
       - name: Build all features
         run: cargo build-all-features
       - name: Test all features
@@ -133,3 +129,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install cargo-audit --locked
       - run: cargo audit --deny warnings
+
+  # Placeholder to be marked as required in PRs and which depends on all other steps
+  finish:
+      needs: [test, audit, doc, dependency-updates, minimal-versions, miri, multi-os-testing]
+      runs-on: ubuntu-24.04
+      steps:
+          - name: Done
+            run: echo "All finished"
