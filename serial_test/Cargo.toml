@@ -17,14 +17,14 @@ parking_lot = {version="^0.12", default-features = false}
 serial_test_derive = { version = "~4.0.1", path = "../serial_test_derive" }
 fslock = { version = "0.2", optional = true, default-features = false, features = ["std"]}
 document-features = { version = "0.2", optional = true }
-log = { version = ">=0.4.4", optional = true }
+log = { version = "0.4.4", optional = true }
 futures-executor = { version = "^0.3", optional = true, default-features = false, features = ["std"] }
 futures-util = { version = "^0.3", optional = true, default-features = false, features = ["std"] }
 
-env_logger = {version=">=0.6.1", optional=true, default-features = false}
+env_logger = {version=">=0.6.1, < 0.12", optional=true, default-features = false}
 
 [dev-dependencies]
-itertools = {version=">=0.4", default-features = false, features = ["use_std"]}
+itertools = {version=">=0.4, < 0.16", default-features = false, features = ["use_std"]}
 
 [features]
 default = ["logging", "async"]
