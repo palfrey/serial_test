@@ -21,10 +21,10 @@ log = { version = "0.4.4", optional = true }
 futures-executor = { version = "^0.3", optional = true, default-features = false, features = ["std"] }
 futures-util = { version = "^0.3", optional = true, default-features = false, features = ["std"] }
 
-env_logger = {version=">=0.6.1, < 0.12", optional=true, default-features = false}
+env_logger = {version=">=0.6.1, <0.12", optional=true, default-features = false}
 
 [dev-dependencies]
-itertools = {version=">=0.4, < 0.16", default-features = false, features = ["use_std"]}
+itertools = {version=">=0.4, <0.16", default-features = false, features = ["use_std"]}
 
 [features]
 default = ["logging", "async"]

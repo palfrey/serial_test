@@ -19,7 +19,7 @@ syn = { version="3", features=["full", "printing", "parsing", "clone-impls"], de
 proc-macro2 = { version="1.0.60", features = ["proc-macro"], default-features = false} # Because of https://github.com/dtolnay/proc-macro2/issues/356
 
 [dev-dependencies]
-env_logger = {version=">=0.6.1, < 0.12", default-features = false}
+env_logger = {version=">=0.6.1, <0.12", default-features = false}
 prettyplease = {version="0.3", default-features = false}
 
 [features]
