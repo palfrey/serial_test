@@ -183,6 +183,7 @@ pub fn parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// ````
 ///
 /// Inner attributes are also supported via `inner_attrs`, see [serial](macro@serial) for details.
+#[cfg(feature = "file_locks")]
 #[proc_macro_attribute]
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
@@ -231,6 +232,8 @@ pub fn file_serial(attr: TokenStream, input: TokenStream) -> TokenStream {
 /// ````
 ///
 /// Inner attributes are also supported via `inner_attrs`, see [serial](macro@serial) for details.
+///
+#[cfg(feature = "file_locks")]
 #[proc_macro_attribute]
 #[cfg_attr(docsrs, doc(cfg(feature = "file_locks")))]
 pub fn file_parallel(attr: TokenStream, input: TokenStream) -> TokenStream {
@@ -437,6 +440,7 @@ fn local_parallel_core(
     parallel_setup(input, config, "local")
 }
 
+#[cfg(feature = "file_locks")]
 fn fs_serial_core(
     attr: proc_macro2::TokenStream,
     input: proc_macro2::TokenStream,
@@ -445,6 +449,7 @@ fn fs_serial_core(
     serial_setup(input, config, "fs")
 }
 
+#[cfg(feature = "file_locks")]
 fn fs_parallel_core(
     attr: proc_macro2::TokenStream,
     input: proc_macro2::TokenStream,
@@ -651,7 +656,9 @@ fn parallel_setup(
 
 #[cfg(test)]
 mod tests {
-    use super::{fs_serial_core, local_parallel_core, local_serial_core};
+    #[cfg(feature = "file_locks")]
+    use super::fs_serial_core;
+    use super::{local_parallel_core, local_serial_core};
     use proc_macro2::{TokenStream, TokenTree};
     use quote::quote;
     use std::iter::FromIterator;
@@ -773,6 +780,7 @@ mod tests {
         assert_eq!(format!("{}", compare), format!("{}", stream));
     }
 
+    #[cfg(feature = "file_locks")]
     #[test]
     fn test_file_serial() {
         init();
@@ -794,6 +802,7 @@ mod tests {
         compare_streams(compare, stream);
     }
 
+    #[cfg(feature = "file_locks")]
     #[test]
     fn test_file_serial_no_args() {
         init();
@@ -815,6 +824,7 @@ mod tests {
         compare_streams(compare, stream);
     }
 
+    #[cfg(feature = "file_locks")]
     #[test]
     fn test_file_serial_with_path() {
         init();
@@ -1018,6 +1028,7 @@ mod tests {
         compare_streams(compare, stream);
     }
 
+    #[cfg(feature = "file_locks")]
     #[test]
     fn test_crate_wrapper() {
         init();
@@ -1041,6 +1052,7 @@ mod tests {
         compare_streams(compare, stream);
     }
 
+    #[cfg(feature = "file_locks")]
     #[test]
     fn test_crate_wrapper_with_path() {
         init();
@@ -1064,6 +1076,7 @@ mod tests {
         compare_streams(compare, stream);
     }
 
+    #[cfg(feature = "file_locks")]
     #[test]
     fn test_crate_wrapper_with_path_and_key() {
         init();
