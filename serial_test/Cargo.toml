@@ -22,7 +22,7 @@ denylist = ["docsrs"]
 always_include_features = ["test_logging"]
 
 [dependencies]
-document-features = { version = ">=0.2.0, <0.3", default-features = false, optional = true }
+document-features = { version = ">=0.2.0, <0.3", default-features = false, features = ["default"], optional = true }
 env_logger = { version = ">=0.6.1, <0.12", default-features = false, optional = true }
 fslock = { version = ">=0.2.0, <0.3", default-features = false, features = ["std"], optional = true }
 futures-executor = { version = ">=0.3.0, <0.4", default-features = false, features = ["std"], optional = true }
