@@ -9,6 +9,9 @@ repository = "https://github.com/palfrey/serial_test/"
 license = "MIT"
 categories = ["development-tools::testing"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [lib]
 proc-macro = true
 

@@ -22,15 +22,15 @@ denylist = ["docsrs"]
 always_include_features = ["test_logging"]
 
 [dependencies]
-document-features = { version = ">=0.2.0, <0.3", optional = true }
+document-features = { version = ">=0.2.0, <0.3", default-features = false, features = ["default"], optional = true }
 env_logger = { version = ">=0.6.1, <0.12", default-features = false, optional = true }
 fslock = { version = ">=0.2.0, <0.3", default-features = false, features = ["std"], optional = true }
 futures-executor = { version = ">=0.3.0, <0.4", default-features = false, features = ["std"], optional = true }
 futures-util = { version = ">=0.3.0, <0.4", default-features = false, features = ["std"], optional = true }
-log = { version = ">=0.4.4, <0.5", optional = true }
+log = { version = ">=0.4.4, <0.5", default-features = false, optional = true }
 once_cell = { version = ">=1.19.0, <2", default-features = false, features = ["std"] }
 parking_lot = { version = ">=0.12.0, <0.13", default-features = false }
-serial_test_derive = { path = "../serial_test_derive", version = "~4.0.1" }
+serial_test_derive = { path = "../serial_test_derive", version = "~4.0.1", default-features = false }
 
 [dev-dependencies]
 itertools = { version = ">=0.4.0, <0.16", default-features = false, features = ["use_std"] }
@@ -45,7 +45,7 @@ logging = ["dep:log"]
 async = ["dep:futures-executor", "dep:futures-util", "serial_test_derive/async"]
 
 ## The file_locks feature unlocks the `file_serial`/`file_parallel` macros
-file_locks = ["dep:fslock"]
+file_locks = ["dep:fslock", "serial_test_derive/file_locks"]
 
 #! ### Internal-only features
 
