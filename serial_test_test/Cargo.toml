@@ -22,7 +22,7 @@ wasm-bindgen-test = { version = ">=0.3.50, <0.4", default-features = false, feat
 [dev-dependencies]
 actix-rt = { version = ">=2.8.0, <3", default-features = false, features = ["macros"] }
 futures-util = { version = ">=0.3.0, <0.4", default-features = false }
-ntest = { version = ">=0.9.5, <1", default-features = false }
+ntest = { version = ">=0.9.5, <0.10", default-features = false }
 tokio = { version = ">=1.38.2, <2", default-features = false, features = ["macros", "rt", "rt-multi-thread"] }
 
 [features]
