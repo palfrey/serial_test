@@ -1,0 +1,12 @@
+toml-version = "v1.0.0"
+
+[lint]
+[lint.rules]
+tables-out-of-order = "error"
+
+[[schemas]]
+path = "cargo.json"
+include = ["Cargo.toml"]
+
+[schemas.lint.rules]
+deprecated = "error"

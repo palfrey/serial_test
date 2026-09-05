@@ -130,9 +130,20 @@ jobs:
       - run: cargo install cargo-audit --locked
       - run: cargo audit --deny warnings
 
+  version-lint:
+    name: Version lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: tombi-toml/setup-tombi@v1.5.2
+      - name: Check TOML format
+        run: tombi format --check
+      - name: Validate TOML files
+        run: tombi lint      
+
   # Placeholder to be marked as required in PRs and which depends on all other steps
   finish:
-      needs: [test, audit, doc, dependency-updates, minimal-versions, miri, multi-os-testing]
+      needs: [test, audit, doc, dependency-updates, minimal-versions, miri, multi-os-testing, version-lint]
       runs-on: ubuntu-24.04
       steps:
           - name: Done
