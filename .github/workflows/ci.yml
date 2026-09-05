@@ -136,6 +136,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: tombi-toml/setup-tombi@v1.5.2
+      - name: Check TOML format
+        run: tombi format --check
       - name: Validate TOML files
         run: tombi lint      
 
