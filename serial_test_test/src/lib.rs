@@ -37,7 +37,6 @@
 //! ```
 
 use log::info;
-use once_cell::sync::OnceCell;
 #[cfg(test)]
 use serial_test::{parallel, serial};
 use std::{
@@ -47,13 +46,13 @@ use std::{
     path::PathBuf,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc, Mutex,
+        Arc, Mutex, OnceLock,
     },
     thread,
     time::Duration,
 };
 
-static LOCKS: OnceCell<Mutex<HashMap<String, Arc<AtomicUsize>>>> = OnceCell::new();
+static LOCKS: OnceLock<Mutex<HashMap<String, Arc<AtomicUsize>>>> = OnceLock::new();
 
 fn init() {
     let _ = env_logger::builder().is_test(false).try_init();
@@ -76,7 +75,7 @@ pub fn test_fn(key: &str, count: usize) {
 }
 
 fn get_fs_path() -> PathBuf {
-    static FS_PATH: OnceCell<PathBuf> = OnceCell::new();
+    static FS_PATH: OnceLock<PathBuf> = OnceLock::new();
     FS_PATH.get_or_init(env::temp_dir).clone()
 }
 
@@ -110,10 +109,13 @@ pub const RELATIVE_FS: &str = "relative-fs";
 mod tests {
     use super::{init, test_fn};
     use log::info;
-    use once_cell::sync::OnceCell;
     use parking_lot::Mutex;
     use serial_test::{parallel, serial};
-    use std::{sync::Barrier, thread, time::Duration};
+    use std::{
+        sync::{Barrier, OnceLock},
+        thread,
+        time::Duration,
+    };
     #[cfg(feature = "async")]
     use wasm_bindgen_test::wasm_bindgen_test;
 
@@ -121,7 +123,7 @@ mod tests {
 
     #[inline]
     fn parallel_barrier() -> &'static Barrier {
-        static PARALLEL_BARRIER: OnceCell<Barrier> = OnceCell::new();
+        static PARALLEL_BARRIER: OnceLock<Barrier> = OnceLock::new();
         PARALLEL_BARRIER.get_or_init(|| Barrier::new(3))
     }
 
@@ -131,7 +133,7 @@ mod tests {
     #[cfg(feature = "file_locks")]
     #[inline]
     fn fs_parallel_barrier() -> &'static Barrier {
-        static FS_PARALLEL_BARRIER: OnceCell<Barrier> = OnceCell::new();
+        static FS_PARALLEL_BARRIER: OnceLock<Barrier> = OnceLock::new();
         FS_PARALLEL_BARRIER.get_or_init(|| Barrier::new(3))
     }
 

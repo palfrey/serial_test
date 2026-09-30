@@ -1,8 +1,7 @@
 use crate::rwlock::{Locks, MutexGuardWrapper};
-use once_cell::sync::OnceCell;
 use std::{
     collections::HashMap,
-    sync::{atomic::AtomicU32, Mutex},
+    sync::{atomic::AtomicU32, Mutex, OnceLock},
 };
 
 pub(crate) struct ValueRef(UniqueReentrantMutex);
@@ -79,7 +78,7 @@ impl UniqueReentrantMutex {
 pub(crate) fn global_locks() -> &'static LockMap {
     #[cfg(feature = "test_logging")]
     let _ = env_logger::builder().try_init();
-    static LOCKS: OnceCell<LockMap> = OnceCell::new();
+    static LOCKS: OnceLock<LockMap> = OnceLock::new();
     LOCKS.get_or_init(LockMap::new)
 }
 
