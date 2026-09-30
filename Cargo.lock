@@ -470,7 +470,6 @@ dependencies = [
  "futures-util",
  "itertools",
  "log",
- "once_cell",
  "parking_lot",
  "serial_test_derive",
 ]
@@ -496,7 +495,6 @@ dependencies = [
  "lock_api",
  "log",
  "ntest",
- "once_cell",
  "parking_lot",
  "scoped-tls",
  "serial_test",
