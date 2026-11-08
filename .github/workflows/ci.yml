@@ -21,12 +21,12 @@ jobs:
           - nightly
           - 1.93.1
     steps:
-      - uses: actions/checkout@v3.5.0
+      - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
           components: clippy, rustfmt
-      - uses: Swatinem/rust-cache@v2.2.1
+      - uses: Swatinem/rust-cache@v2.9.3
       - name: Check formatting
         run: cargo fmt -- --check
         if: ${{ matrix.rust == 'nightly' }}
@@ -54,11 +54,11 @@ jobs:
           - windows-latest
           - macos-latest
     steps:
-      - uses: actions/checkout@v3.5.0
+      - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-      - uses: Swatinem/rust-cache@v2.2.1
+      - uses: Swatinem/rust-cache@v2.9.3
       - name: Build and test
         run: cargo test --all-features -- --nocapture
         env:
@@ -69,12 +69,12 @@ jobs:
     name: Miri
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3.5.0
+      - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: nightly
           components: miri
-      - uses: Swatinem/rust-cache@v2.2.1
+      - uses: Swatinem/rust-cache@v2.9.3
       - name: Miri strict provenance
         run: cargo miri test -p serial_test --all-features -- --skip file_lock
         env:
@@ -84,7 +84,7 @@ jobs:
     name: minimal versions check
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3.5.0
+      - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: nightly
@@ -96,7 +96,7 @@ jobs:
     name: dependency updates
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3.5.0
+      - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
@@ -115,7 +115,7 @@ jobs:
     env:
       RUSTDOCFLAGS: -Dwarnings
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@nightly
       - uses: dtolnay/install@cargo-docs-rs
       - run: cargo docs-rs -p serial_test
@@ -125,7 +125,7 @@ jobs:
     name: Audit
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install cargo-audit --locked
       - run: cargo audit --deny warnings
@@ -134,7 +134,7 @@ jobs:
     name: Version lint
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - uses: tombi-toml/setup-tombi@v1.5.2
       - name: Check TOML format
         run: tombi format --check
